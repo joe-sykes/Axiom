@@ -1,0 +1,36 @@
+{
+    "name": "Axiom - Daily Puzzle Games",
+    "short_name": "Axiom",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#252A34",
+    "theme_color": "#252A34",
+    "description": "Challenge yourself with three unique daily puzzles: Almanac, Cryptix, and Doublet. New puzzles every day at midnight.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "categories": ["games", "entertainment", "puzzle"],
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
