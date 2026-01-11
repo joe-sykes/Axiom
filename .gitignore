@@ -49,3 +49,7 @@ app.*.map.json
 
 # Claude Code
 .claude/
+
+# Service account keys (never commit these!)
+*-service-account.json
+*.csv

@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
-import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/stats_bar.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
+import '../services/storage_service.dart';
 
 /// Helper to get optimized image URL from Firebase Storage
 String getOptimizedImageUrl(String originalUrl, {int? width}) {
@@ -29,12 +29,14 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMixin {
   final TextEditingController _answerController = TextEditingController();
+  final StorageService _storageService = StorageService();
 
   bool _isCorrect = false;
   bool _hasSubmitted = false;
   int _streak = 0;
   int _hintsUsed = 0;
   List<bool> _hintsRevealed = [false, false, false];
+  bool _helpDialogShown = false;
 
   // Timer for scoring
   DateTime? _puzzleStartTime;
@@ -57,10 +59,56 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
       CurvedAnimation(parent: _logoAnimationController, curve: Curves.easeInOut),
     );
 
-    // Load puzzle on init
+    // Load puzzle on init and check for first-time user
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(almanacGameProvider.notifier).loadPuzzle();
+      _checkAndShowHelp();
+      _checkIfAlreadyCompleted();
     });
+  }
+
+  Future<void> _checkAndShowHelp() async {
+    if (_helpDialogShown) return;
+
+    final hasSeenHelp = await _storageService.hasSeenHelp();
+    if (!hasSeenHelp && mounted) {
+      _helpDialogShown = true;
+      _showInfoDialog();
+      await _storageService.markHelpAsSeen();
+    }
+  }
+
+  Future<void> _checkIfAlreadyCompleted() async {
+    final gameState = ref.read(almanacGameProvider);
+    if (gameState.todaysPuzzle == null) {
+      // Wait for puzzle to load and try again
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      final updatedState = ref.read(almanacGameProvider);
+      if (updatedState.todaysPuzzle == null) return;
+      await _restoreCompletionState(updatedState.todaysPuzzle!.date);
+    } else {
+      await _restoreCompletionState(gameState.todaysPuzzle!.date);
+    }
+  }
+
+  Future<void> _restoreCompletionState(String puzzleDate) async {
+    final isCompleted = await _storageService.isPuzzleCompleted(puzzleDate);
+    if (isCompleted && mounted) {
+      final score = await _storageService.getScoreForPuzzle(puzzleDate);
+      final puzzle = ref.read(almanacGameProvider).todaysPuzzle;
+      setState(() {
+        _isCorrect = true;
+        _hasSubmitted = true;
+        _finalScore = score ?? 100;
+      });
+      // Use the first accepted answer to mark as solved in provider
+      if (puzzle != null && puzzle.acceptedAnswers.isNotEmpty) {
+        ref.read(almanacGameProvider.notifier).checkAnswer(
+          puzzle.acceptedAnswers.first,
+        );
+      }
+    }
   }
 
   @override
@@ -110,7 +158,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     return score.clamp(0, 100);
   }
 
-  void _submitAnswer() {
+  void _submitAnswer() async {
     final guess = _answerController.text;
     if (guess.trim().isEmpty) return;
 
@@ -122,6 +170,13 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
       _scoreTimer?.cancel();
       final score = _calculateFinalScore();
       _finalScore = score;
+      // Save completion to storage
+      await _storageService.markPuzzleCompleted(
+        gameState.todaysPuzzle!.date,
+        score,
+      );
+      // Refresh streak calculation
+      ref.invalidate(almanacStreakProvider);
       _showCompletionDialog(score);
     }
     setState(() {
@@ -350,10 +405,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     Navigator.pushNamed(context, RouteNames.almanacArchive);
   }
 
-  void _toggleTheme() {
-    ref.read(themeModeProvider.notifier).toggleTheme();
-  }
-
   void _showInfoDialog() {
     showDialog(
       context: context,
@@ -443,8 +494,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(almanacGameProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final streakAsync = ref.watch(almanacStreakProvider);
+    final completedCountAsync = ref.watch(almanacCompletedCountProvider);
+    final streak = streakAsync.valueOrNull ?? 0;
+    final completedCount = completedCountAsync.valueOrNull ?? 0;
 
     // Start timer when puzzle is ready
     if (gameState.state == AlmanacPuzzleState.ready && _puzzleStartTime == null) {
@@ -463,14 +516,17 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           tooltip: 'Back to Axiom',
         ),
         title: GestureDetector(
-          onTap: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            RouteNames.home,
-            (route) => false,
-          ),
-          child: const MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Row(
+          onTap: () {
+            if (gameState.state == AlmanacPuzzleState.solved) {
+              _openArchive();
+            }
+            // If not solved, we're already on home
+          },
+          child: MouseRegion(
+            cursor: gameState.state == AlmanacPuzzleState.solved
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.image_search),
@@ -488,11 +544,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
             onPressed: _showInfoDialog,
           ),
           IconButton(
-            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-            onPressed: _toggleTheme,
-          ),
-          IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'View Archive',
             onPressed: _openArchive,
@@ -503,10 +554,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
         child: Column(
           children: [
             Expanded(child: _buildBody(gameState)),
-            if (_streak > 0)
+            if (completedCount > 0)
               StatsBar(
-                streak: _streak,
-                played: _streak,
+                streak: streak,
+                played: completedCount,
               ),
             const AppFooter(),
           ],

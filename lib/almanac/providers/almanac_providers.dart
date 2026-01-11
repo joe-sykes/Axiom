@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/firebase/firebase_manager.dart';
 import '../models/puzzle.dart';
 import '../services/puzzle_service.dart';
+import '../services/storage_service.dart';
 
 // ============ Core Dependencies ============
 
@@ -153,10 +154,22 @@ final almanacGameProvider =
 
 // ============ Stats ============
 
-/// Almanac streak - read from SharedPreferences
-final almanacStreakProvider = Provider<int>((ref) {
-  final prefs = ref.watch(almanacPrefsProvider);
-  return prefs.getInt('almanac_streak') ?? 0;
+/// Storage service provider
+final almanacStorageServiceProvider = Provider<StorageService>((ref) {
+  return StorageService();
+});
+
+/// Almanac streak - calculated from completed puzzles
+final almanacStreakProvider = FutureProvider<int>((ref) async {
+  final storage = ref.watch(almanacStorageServiceProvider);
+  return storage.calculateStreak();
+});
+
+/// Almanac total completed puzzles count
+final almanacCompletedCountProvider = FutureProvider<int>((ref) async {
+  final storage = ref.watch(almanacStorageServiceProvider);
+  final completed = await storage.getCompletedPuzzles();
+  return completed.length;
 });
 
 // ============ Initialization ============

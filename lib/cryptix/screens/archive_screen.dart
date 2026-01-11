@@ -69,8 +69,21 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
-          onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
-          child: const Text('CRYPTIX'),
+          onTap: () {
+            // Go back to home (which will show solved state if completed)
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+          child: const MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.quiz_outlined),
+                SizedBox(width: 8),
+                Text('CRYPTIX'),
+              ],
+            ),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

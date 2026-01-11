@@ -296,6 +296,13 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
       solvedAt: DateTime.now(),
     );
     await _storage.savePuzzleProgress(progress);
+
+    // Update totalSolved count for archive puzzles too
+    final newStats = state.stats.copyWith(
+      totalSolved: state.stats.totalSolved + 1,
+    );
+    await _storage.saveStats(newStats);
+    state = state.copyWith(stats: newStats);
   }
 }
 

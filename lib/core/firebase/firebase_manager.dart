@@ -4,13 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'almanac_firebase.dart';
 import 'cryptix_firebase.dart';
 import 'doublet_firebase.dart';
+import 'triverse_firebase.dart';
 
 /// Manages multiple Firebase projects for the Axiom app.
-/// Each game (Almanac, Cryptix, Doublet) has its own Firebase project.
+/// Each game (Almanac, Cryptix, Doublet, Triverse) has its own Firebase project.
 class FirebaseManager {
   static FirebaseApp? _almanacApp;
   static FirebaseApp? _cryptixApp;
   static FirebaseApp? _doubletApp;
+  static FirebaseApp? _triverseApp;
 
   static bool _initialized = false;
 
@@ -34,6 +36,12 @@ class FirebaseManager {
     _doubletApp = await Firebase.initializeApp(
       name: 'doublet',
       options: DoubletFirebaseOptions.currentPlatform,
+    );
+
+    // Initialize Triverse as a secondary app
+    _triverseApp = await Firebase.initializeApp(
+      name: 'triverse',
+      options: TriverseFirebaseOptions.currentPlatform,
     );
 
     _initialized = true;
@@ -76,5 +84,18 @@ class FirebaseManager {
   /// Get Firestore instance for Doublet
   static FirebaseFirestore get doubletFirestore {
     return FirebaseFirestore.instanceFor(app: doubletApp);
+  }
+
+  /// Get the Triverse Firebase app
+  static FirebaseApp get triverseApp {
+    if (_triverseApp == null) {
+      throw StateError('FirebaseManager not initialized. Call initializeAll() first.');
+    }
+    return _triverseApp!;
+  }
+
+  /// Get Firestore instance for Triverse
+  static FirebaseFirestore get triverseFirestore {
+    return FirebaseFirestore.instanceFor(app: triverseApp);
   }
 }

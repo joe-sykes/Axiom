@@ -8,6 +8,7 @@ import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../cryptix/providers/cryptix_providers.dart';
 import '../../doublet/providers/providers.dart';
+import '../../triverse/providers/triverse_providers.dart';
 
 class AxiomHomeScreen extends ConsumerWidget {
   const AxiomHomeScreen({super.key});
@@ -22,7 +23,14 @@ class AxiomHomeScreen extends ConsumerWidget {
     // Get stats from each game
     final cryptixState = ref.watch(cryptixGameProvider);
     final doubletStats = ref.watch(userStatsProvider);
-    final almanacStreak = ref.watch(almanacStreakProvider);
+    final almanacStreakAsync = ref.watch(almanacStreakProvider);
+    final almanacStreak = almanacStreakAsync.valueOrNull ?? 0;
+    final almanacCompletedAsync = ref.watch(almanacCompletedCountProvider);
+    final almanacCompleted = almanacCompletedAsync.valueOrNull ?? 0;
+    final triverseStreakAsync = ref.watch(triverseStreakProvider);
+    final triverseStreak = triverseStreakAsync.valueOrNull ?? 0;
+    final triverseCompletedAsync = ref.watch(triverseCompletedCountProvider);
+    final triverseCompleted = triverseCompletedAsync.valueOrNull ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +87,7 @@ class AxiomHomeScreen extends ConsumerWidget {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth > 800 ? 3 : 1;
+                    final crossAxisCount = constraints.maxWidth > 800 ? 4 : (constraints.maxWidth > 500 ? 2 : 1);
                     return GridView.count(
                       crossAxisCount: crossAxisCount,
                       mainAxisSpacing: 16,
@@ -93,6 +101,7 @@ class AxiomHomeScreen extends ConsumerWidget {
                           accentColor: AxiomColors.almanacAccent,
                           route: RouteNames.almanac,
                           streak: almanacStreak > 0 ? almanacStreak : null,
+                          played: almanacCompleted > 0 ? almanacCompleted : null,
                         ),
                         _GameCard(
                           title: 'Cryptix',
@@ -119,6 +128,15 @@ class AxiomHomeScreen extends ConsumerWidget {
                           played: doubletStats.totalGamesPlayed > 0
                               ? doubletStats.totalGamesPlayed
                               : null,
+                        ),
+                        _GameCard(
+                          title: 'Triverse',
+                          subtitle: 'Daily Trivia Challenge',
+                          icon: Icons.bolt,
+                          accentColor: AxiomColors.triverseAccent,
+                          route: RouteNames.triverse,
+                          streak: triverseStreak > 0 ? triverseStreak : null,
+                          played: triverseCompleted > 0 ? triverseCompleted : null,
                         ),
                       ],
                     );

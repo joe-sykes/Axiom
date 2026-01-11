@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/route_names.dart';
-import '../../core/providers/core_providers.dart';
 import '../../core/widgets/app_footer.dart';
 import '../providers/cryptix_providers.dart';
 import '../services/scoring_service.dart';
 import '../widgets/clue_display.dart';
 import '../widgets/crossword_input.dart';
 import '../widgets/completion_dialog.dart';
+import '../widgets/help_dialog.dart';
 import '../widgets/stats_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -23,13 +23,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showIncorrectFeedback = false;
   bool _showWrongLetters = false;
   List<String>? _userLetters;
+  bool _helpChecked = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(cryptixGameProvider.notifier).init();
+      _initializeAndShowHelp();
     });
+  }
+
+  Future<void> _initializeAndShowHelp() async {
+    // Initialize the game
+    await ref.read(cryptixGameProvider.notifier).init();
+
+    // Check if we should show help (first-time user)
+    if (!_helpChecked && mounted) {
+      _helpChecked = true;
+      final storage = ref.read(cryptixStorageProvider);
+      final isFirstLaunch = storage.isFirstLaunch();
+      if (isFirstLaunch) {
+        showCryptixHelpDialog(context);
+        await storage.setFirstLaunchComplete();
+      }
+    }
   }
 
   void _onLettersChanged(List<String> letters) {
@@ -49,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context) => CompletionDialog(
         score: gameState.todaysProgress?.score ?? 0,
         stats: gameState.stats,
-        onArchive: () => Navigator.of(context).pushNamed('/archive'),
+        onArchive: () => Navigator.of(context).pushNamed(RouteNames.cryptixArchive),
         onClose: () {},
       ),
     );
@@ -136,8 +153,6 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
     final theme = Theme.of(context);
     final dateFormat = DateFormat('d MMMM yyyy');
     final gameState = ref.watch(cryptixGameProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -151,19 +166,23 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
           tooltip: 'Back to Axiom',
         ),
         title: GestureDetector(
-          onTap: () => Navigator.pushNamedAndRemoveUntil(
-            context,
-            RouteNames.home,
-            (route) => false,
-          ),
-          child: const MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Row(
+          onTap: () {
+            final isSolved = gameState.state == CryptixPuzzleState.solved;
+            if (isSolved) {
+              Navigator.pushNamed(context, RouteNames.cryptixArchive);
+            }
+            // If not solved, we're already on the home page
+          },
+          child: MouseRegion(
+            cursor: gameState.state == CryptixPuzzleState.solved
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.quiz_outlined),
                 SizedBox(width: 8),
-                Text('Cryptix'),
+                Text('CRYPTIX'),
               ],
             ),
           ),
@@ -172,13 +191,8 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
-            onPressed: () => Navigator.pushNamed(context, RouteNames.cryptixHelp),
+            onPressed: () => showCryptixHelpDialog(context),
             tooltip: 'How to Play',
-          ),
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(),
-            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
           ),
           IconButton(
             icon: const Icon(Icons.history),

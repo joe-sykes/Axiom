@@ -25,6 +25,11 @@ import 'doublet/screens/game_screen.dart';
 import 'doublet/screens/archive_screen.dart' as doublet;
 import 'doublet/screens/results_screen.dart';
 
+// Triverse screens
+import 'triverse/screens/triverse_home.dart';
+import 'triverse/screens/triverse_play.dart';
+import 'triverse/screens/triverse_archive.dart';
+
 /// Wraps a screen with a Title widget for SEO
 Widget _withTitle(String title, Widget child) {
   return Title(
@@ -127,6 +132,28 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
     case RouteNames.doubletResults:
       return MaterialPageRoute(
         builder: (_) => _withTitle('Doublet Results', const DoubletResultsScreen()),
+        settings: settings,
+      );
+
+    // Triverse routes
+    case RouteNames.triverse:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Triverse - Daily Trivia Challenge', const TriverseHome()),
+        settings: settings,
+      );
+    case RouteNames.triversePlay:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Triverse - Play', const TriversePlay()),
+        settings: settings,
+      );
+    case RouteNames.triverseArchive:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Triverse Archive', const TriverseArchiveScreen()),
+        settings: settings,
+      );
+    case RouteNames.triversePrivacy:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Privacy Policy - Axiom', const PrivacyScreen()),
         settings: settings,
       );
 

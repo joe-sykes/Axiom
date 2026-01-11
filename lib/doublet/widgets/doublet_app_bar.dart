@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/route_names.dart';
-import '../../core/providers/core_providers.dart';
+import '../providers/providers.dart';
 import 'about_dialog.dart';
 
 /// Shared AppBar widget used across all screens
@@ -29,8 +29,7 @@ class DoubletAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final hasCompletedToday = ref.watch(hasCompletedTodayProvider);
 
     return AppBar(
       leading: leading ?? IconButton(
@@ -39,10 +38,20 @@ class DoubletAppBar extends ConsumerWidget implements PreferredSizeWidget {
         tooltip: 'Back to Axiom',
       ),
       title: GestureDetector(
-        onTap: () => _goHome(context),
-        child: const MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Row(
+        onTap: () {
+          if (hasCompletedToday) {
+            Navigator.pushNamed(context, RouteNames.doubletArchive);
+          } else {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.doublet,
+              (route) => route.settings.name == RouteNames.home,
+            );
+          }
+        },
+        child: MouseRegion(
+          cursor: hasCompletedToday ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.linear_scale),
@@ -62,17 +71,6 @@ class DoubletAppBar extends ConsumerWidget implements PreferredSizeWidget {
             icon: const Icon(Icons.help_outline),
             onPressed: () => showAboutGameDialog(context),
             tooltip: 'How to play',
-          ),
-        ),
-        Semantics(
-          button: true,
-          label: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-          child: IconButton(
-            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () {
-              ref.read(themeModeProvider.notifier).toggleTheme();
-            },
-            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
           ),
         ),
         Semantics(

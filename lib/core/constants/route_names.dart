@@ -22,4 +22,10 @@ class RouteNames {
   static const doubletArchive = '/doublet/archive';
   static const doubletResults = '/doublet/results';
   static const doubletPrivacy = '/doublet/privacy';
+
+  // Triverse routes
+  static const triverse = '/triverse';
+  static const triversePlay = '/triverse/play';
+  static const triverseArchive = '/triverse/archive';
+  static const triversePrivacy = '/triverse/privacy';
 }

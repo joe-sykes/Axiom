@@ -95,7 +95,17 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
-          child: const Text('CRYPTIX'),
+          child: const MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.quiz_outlined),
+                SizedBox(width: 8),
+                Text('CRYPTIX'),
+              ],
+            ),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

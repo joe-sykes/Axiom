@@ -71,9 +71,11 @@ class _DoubletHomeState extends ConsumerState<DoubletHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Stats card
-                        StatsCard(stats: stats),
-                        const SizedBox(height: 24),
+                        // Stats card (only show if user has played at least once)
+                        if (stats.totalGamesPlayed > 0) ...[
+                          StatsCard(stats: stats),
+                          const SizedBox(height: 24),
+                        ],
 
                         // Today's puzzle card
                         Card(
@@ -104,15 +106,18 @@ class _DoubletHomeState extends ConsumerState<DoubletHome> {
                                         ],
                                       ),
                                       const SizedBox(height: 20),
-                                      Text(
-                                        '${puzzle.startWord}  \u2192  ${puzzle.endWord}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 2,
-                                            ),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          '${puzzle.startWord}  \u2192  ${puzzle.endWord}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 2,
+                                              ),
+                                        ),
                                       ),
                                       const SizedBox(height: 24),
                                       if (hasCompletedToday)
