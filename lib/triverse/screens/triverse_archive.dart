@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/widgets/app_footer.dart';
 import '../models/triverse_puzzle.dart';
 import '../providers/triverse_providers.dart';
 import '../widgets/help_dialog.dart';
@@ -91,8 +92,16 @@ class TriverseArchiveScreen extends ConsumerWidget {
 
                         return ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemCount: puzzles.length,
+                          itemCount: puzzles.length + 1, // +1 for footer
                           itemBuilder: (context, index) {
+                            // Footer at the end
+                            if (index == puzzles.length) {
+                              return const Padding(
+                                padding: EdgeInsets.only(top: 16),
+                                child: AppFooter(),
+                              );
+                            }
+
                             final puzzle = puzzles[index];
                             final isCompleted = completed.contains(puzzle.date);
                             final score = scores[puzzle.date];
@@ -122,8 +131,16 @@ class TriverseArchiveScreen extends ConsumerWidget {
                       },
                       loading: () => ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: puzzles.length,
+                        itemCount: puzzles.length + 1, // +1 for footer
                         itemBuilder: (context, index) {
+                          // Footer at the end
+                          if (index == puzzles.length) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 16),
+                              child: AppFooter(),
+                            );
+                          }
+
                           final puzzle = puzzles[index];
                           return _ArchiveItem(
                             puzzle: puzzle,
@@ -146,8 +163,16 @@ class TriverseArchiveScreen extends ConsumerWidget {
                       ),
                       error: (_, __) => ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: puzzles.length,
+                        itemCount: puzzles.length + 1, // +1 for footer
                         itemBuilder: (context, index) {
+                          // Footer at the end
+                          if (index == puzzles.length) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 16),
+                              child: AppFooter(),
+                            );
+                          }
+
                           final puzzle = puzzles[index];
                           return _ArchiveItem(
                             puzzle: puzzle,

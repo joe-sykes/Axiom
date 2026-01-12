@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../core/constants/ui_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../core/utils/scoring_utils.dart';
@@ -82,6 +85,90 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
       node.dispose();
     }
     super.dispose();
+  }
+
+  // Check if we should use the custom on-screen keyboard
+  bool get _useCustomKeyboard {
+    // Use custom keyboard on mobile platforms and web
+    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  }
+
+  int? get _focusedIndex {
+    for (int i = 0; i < _focusNodes.length; i++) {
+      if (_focusNodes[i].hasFocus) return i;
+    }
+    return null;
+  }
+
+  void _onKeyboardKey(String letter, Puzzle puzzle) {
+    final index = _focusedIndex;
+    if (index == null && _controllers.isNotEmpty) {
+      // No field focused, focus first empty one
+      for (int i = 0; i < _controllers.length; i++) {
+        if (_controllers[i].text.length < puzzle.wordLength) {
+          _focusNodes[i].requestFocus();
+          _handleKeyInput(i, letter, puzzle);
+          return;
+        }
+      }
+      return;
+    }
+    if (index == null) return;
+    _handleKeyInput(index, letter, puzzle);
+  }
+
+  void _handleKeyInput(int index, String letter, Puzzle puzzle) {
+    final controller = _controllers[index];
+    if (controller.text.length < puzzle.wordLength) {
+      controller.text = controller.text + letter.toUpperCase();
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+      _onWordChanged(index, controller.text, puzzle);
+    }
+  }
+
+  void _onKeyboardBackspace(Puzzle puzzle) {
+    int? index = _focusedIndex;
+
+    // If no field focused, find the last field with text
+    if (index == null && _controllers.isNotEmpty) {
+      for (int i = _controllers.length - 1; i >= 0; i--) {
+        if (_controllers[i].text.isNotEmpty) {
+          index = i;
+          _focusNodes[i].requestFocus();
+          break;
+        }
+      }
+      // If still null, focus first field
+      if (index == null) {
+        index = 0;
+        _focusNodes[0].requestFocus();
+      }
+    }
+
+    if (index == null) return;
+
+    final controller = _controllers[index];
+    if (controller.text.isNotEmpty) {
+      controller.text = controller.text.substring(0, controller.text.length - 1);
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+      _onWordChanged(index, controller.text, puzzle);
+    } else if (index > 0) {
+      // Move to previous field if current is empty
+      _focusNodes[index - 1].requestFocus();
+    }
+  }
+
+  void _onKeyboardEnter(Puzzle puzzle) {
+    final index = _focusedIndex;
+    if (index == null) return;
+
+    if (_controllers[index].text.length == puzzle.wordLength) {
+      if (index < _controllers.length - 1) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _submitSolution(puzzle);
+      }
+    }
   }
 
   void _onWordChanged(int index, String value, Puzzle puzzle) {
@@ -520,6 +607,7 @@ https://axiompuzzles.web.app
                             },
                             validator: validator,
                             stepNumber: index + 2,
+                            useCustomKeyboard: _useCustomKeyboard,
                           ),
                         );
                       }),
@@ -570,6 +658,9 @@ https://axiompuzzles.web.app
 
                       // Extra padding at bottom to ensure end word is visible above keyboard
                       const SizedBox(height: 16),
+
+                      // Footer
+                      const AppFooter(),
                     ],
                   ),
                 ),
@@ -577,7 +668,7 @@ https://axiompuzzles.web.app
 
               // Bottom action bar
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
@@ -617,6 +708,15 @@ https://axiompuzzles.web.app
                   ],
                 ),
               ),
+
+              // Custom keyboard
+              if (_useCustomKeyboard)
+                GameKeyboard(
+                  onKeyPressed: (letter) => _onKeyboardKey(letter, puzzle),
+                  onBackspace: () => _onKeyboardBackspace(puzzle),
+                  onEnter: () => _onKeyboardEnter(puzzle),
+                  enterLabel: 'NEXT',
+                ),
             ],
           ),
         ),

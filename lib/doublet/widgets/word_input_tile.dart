@@ -11,6 +11,7 @@ class WordInputTile extends StatefulWidget {
   final VoidCallback onSubmitted;
   final GameValidator validator;
   final int stepNumber;
+  final bool useCustomKeyboard;
 
   const WordInputTile({
     super.key,
@@ -21,6 +22,7 @@ class WordInputTile extends StatefulWidget {
     required this.onSubmitted,
     required this.validator,
     required this.stepNumber,
+    this.useCustomKeyboard = false,
   });
 
   @override
@@ -102,44 +104,86 @@ class _WordInputTileState extends State<WordInputTile> {
 
           // Text input - wrapped in AutofillGroup to prevent autofill suggestions
           Expanded(
-            child: AutofillGroup(
-              onDisposeAction: AutofillContextAction.cancel,
-              child: TextField(
-                controller: widget.controller,
-                focusNode: widget.focusNode,
-                textCapitalization: TextCapitalization.characters,
-                maxLength: widget.wordLength,
-                textAlign: TextAlign.center,
-                autocorrect: false,
-                enableSuggestions: false,
-                enableIMEPersonalizedLearning: false,
-                autofillHints: null,
-                keyboardType: TextInputType.visiblePassword,
-                textInputAction: TextInputAction.next,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      letterSpacing: 4,
-                      fontWeight: FontWeight.bold,
+            child: widget.useCustomKeyboard
+                ? GestureDetector(
+                    onTap: () => widget.focusNode.requestFocus(),
+                    child: AbsorbPointer(
+                      child: AutofillGroup(
+                        onDisposeAction: AutofillContextAction.cancel,
+                        child: TextField(
+                          controller: widget.controller,
+                          focusNode: widget.focusNode,
+                          textCapitalization: TextCapitalization.characters,
+                          maxLength: widget.wordLength,
+                          textAlign: TextAlign.center,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          enableIMEPersonalizedLearning: false,
+                          autofillHints: null,
+                          readOnly: true,
+                          showCursor: false,
+                          enableInteractiveSelection: false,
+                          keyboardType: TextInputType.none,
+                          textInputAction: TextInputAction.next,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                letterSpacing: 4,
+                                fontWeight: FontWeight.bold,
+                              ),
+                          decoration: InputDecoration(
+                            counterText: '',
+                            border: InputBorder.none,
+                            hintText: '·' * widget.wordLength,
+                            hintStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.outline,
+                              letterSpacing: 8,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  border: InputBorder.none,
-                  hintText: '·' * widget.wordLength,
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.outline,
-                    letterSpacing: 8,
+                  )
+                : AutofillGroup(
+                    onDisposeAction: AutofillContextAction.cancel,
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: widget.focusNode,
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: widget.wordLength,
+                      textAlign: TextAlign.center,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      enableIMEPersonalizedLearning: false,
+                      autofillHints: null,
+                      keyboardType: TextInputType.visiblePassword,
+                      textInputAction: TextInputAction.next,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            letterSpacing: 4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        border: InputBorder.none,
+                        hintText: '·' * widget.wordLength,
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.outline,
+                          letterSpacing: 8,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+                        UpperCaseTextFormatter(),
+                      ],
+                      onSubmitted: (_) => widget.onSubmitted(),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
-                  UpperCaseTextFormatter(),
-                ],
-                onSubmitted: (_) => widget.onSubmitted(),
-              ),
-            ),
           ),
 
           // Validation indicator

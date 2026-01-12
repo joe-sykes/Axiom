@@ -17,6 +17,7 @@ class CrosswordInput extends StatefulWidget {
   final bool showWrongLetters;
   final VoidCallback? onShowDefinition;
   final bool hintUsed;
+  final bool useCustomKeyboard;
 
   const CrosswordInput({
     super.key,
@@ -33,6 +34,7 @@ class CrosswordInput extends StatefulWidget {
     this.showWrongLetters = false,
     this.onShowDefinition,
     this.hintUsed = false,
+    this.useCustomKeyboard = false,
   });
 
   @override
@@ -139,6 +141,64 @@ class CrosswordInputState extends State<CrosswordInput> {
   bool get isAnswerComplete => _letters.every((letter) => letter.isNotEmpty);
 
   bool _isRevealed(int index) => widget.revealedIndices.contains(index);
+
+  // Public methods for custom keyboard input
+  void handleKeyboardLetter(String letter) {
+    if (widget.isLocked) return;
+
+    // Find the focused index or first empty non-revealed cell
+    int targetIndex = _focusedIndex;
+    if (_isRevealed(targetIndex) || _letters[targetIndex].isNotEmpty) {
+      // Find next empty non-revealed cell
+      for (int i = 0; i < widget.length; i++) {
+        if (!_isRevealed(i) && _letters[i].isEmpty) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (_isRevealed(targetIndex)) return;
+
+    setState(() {
+      _letters[targetIndex] = letter.toUpperCase();
+      _controllers[targetIndex].text = letter.toUpperCase();
+      _focusedIndex = targetIndex;
+    });
+
+    widget.onLettersChanged?.call(List<String>.from(_letters));
+    _focusNext(targetIndex);
+  }
+
+  void handleKeyboardBackspace() {
+    if (widget.isLocked) return;
+
+    int targetIndex = _focusedIndex;
+
+    // If current cell is empty, go to previous non-revealed cell
+    if (_letters[targetIndex].isEmpty || _isRevealed(targetIndex)) {
+      for (int i = targetIndex - 1; i >= 0; i--) {
+        if (!_isRevealed(i)) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (_isRevealed(targetIndex)) return;
+
+    setState(() {
+      _letters[targetIndex] = '';
+      _controllers[targetIndex].clear();
+      _focusedIndex = targetIndex;
+    });
+
+    widget.onLettersChanged?.call(List<String>.from(_letters));
+  }
+
+  void handleKeyboardEnter() {
+    _handleSubmit();
+  }
 
   bool _isWrongLetter(int index) {
     if (!widget.showWrongLetters || widget.correctAnswer == null) return false;
@@ -431,6 +491,9 @@ class CrosswordInputState extends State<CrosswordInput> {
                         textAlign: TextAlign.center,
                         textCapitalization: TextCapitalization.characters,
                         maxLength: 1,
+                        readOnly: widget.useCustomKeyboard,
+                        showCursor: false,
+                        keyboardType: widget.useCustomKeyboard ? TextInputType.none : null,
                         style: TextStyle(
                           fontSize: cellSize * 0.45,
                         ),
@@ -442,7 +505,7 @@ class CrosswordInputState extends State<CrosswordInput> {
                           FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
                           UpperCaseTextFormatter(),
                         ],
-                        onChanged: (value) => _onLetterChanged(index, value),
+                        onChanged: widget.useCustomKeyboard ? null : (value) => _onLetterChanged(index, value),
                       ),
                     ),
                   ],

@@ -62,38 +62,39 @@ class AxiomHomeScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Text(
-                'DAILY PUZZLES',
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Choose your challenge',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 800 ? 4 : (constraints.maxWidth > 500 ? 2 : 1);
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Text(
+                    'DAILY PUZZLES',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose your challenge',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
 
-              // Game cards
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth > 800 ? 4 : (constraints.maxWidth > 500 ? 2 : 1);
-                    return GridView.count(
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: crossAxisCount == 1 ? 2.2 : 1.0,
-                      children: [
+                  // Game cards
+                  GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: crossAxisCount == 1 ? 1.6 : 1.0,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
                         _GameCard(
                           title: 'Almanac',
                           subtitle: 'Daily Image Puzzle',
@@ -121,7 +122,7 @@ class AxiomHomeScreen extends ConsumerWidget {
                           subtitle: 'Daily Word Ladder',
                           icon: Icons.linear_scale,
                           accentColor: AxiomColors.doubletAccent,
-                          route: RouteNames.doublet,
+                          route: RouteNames.doubletPlay,
                           streak: doubletStats.currentStreak > 0
                               ? doubletStats.currentStreak
                               : null,
@@ -138,16 +139,17 @@ class AxiomHomeScreen extends ConsumerWidget {
                           streak: triverseStreak > 0 ? triverseStreak : null,
                           played: triverseCompleted > 0 ? triverseCompleted : null,
                         ),
-                      ],
-                    );
-                  },
-                ),
-              ),
+                    ],
+                  ),
 
-              // Footer
-              const AppFooter(),
-            ],
-          ),
+                  const SizedBox(height: 24),
+
+                  // Footer
+                  const AppFooter(),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

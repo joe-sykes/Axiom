@@ -123,7 +123,6 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
             Expanded(
               child: _buildContent(theme),
             ),
-            const AppFooter(),
           ],
         ),
       ),
@@ -209,8 +208,16 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
         constraints: const BoxConstraints(maxWidth: 600),
         child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: _puzzles!.length,
+          itemCount: _puzzles!.length + 1, // +1 for footer
           itemBuilder: (context, index) {
+            // Footer at the end
+            if (index == _puzzles!.length) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: AppFooter(),
+              );
+            }
+
             final puzzle = _puzzles![index];
             final progress = _progress?[puzzle.uid];
             final isSolved = progress?.solved ?? false;

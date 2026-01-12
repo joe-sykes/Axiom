@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptix_providers.dart';
 import '../widgets/clue_display.dart';
@@ -25,6 +27,11 @@ class ArchivePuzzleScreen extends ConsumerStatefulWidget {
 class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
   bool _solved = false;
   bool _showIncorrectFeedback = false;
+  final GlobalKey<CrosswordInputState> _crosswordKey = GlobalKey();
+
+  bool get _useCustomKeyboard {
+    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  }
 
   @override
   void initState() {
@@ -192,12 +199,14 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
 
                           // Crossword input
                           CrosswordInput(
+                            key: _useCustomKeyboard ? _crosswordKey : null,
                             length: widget.puzzle.length,
                             isLocked: _solved,
                             isCorrect: _solved,
                             correctAnswer: widget.puzzle.answer,
                             canRevealLetter: false,
                             onSubmit: _handleSubmit,
+                            useCustomKeyboard: _useCustomKeyboard,
                           ),
 
                           // Incorrect feedback
@@ -260,6 +269,8 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
                               ),
                             ),
                           ],
+                          const SizedBox(height: 24),
+                          const AppFooter(),
                         ],
                       ),
                     ),
@@ -267,7 +278,13 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
                 ),
               ),
             ),
-            const AppFooter(),
+            // Custom keyboard
+            if (_useCustomKeyboard && !_solved)
+              GameKeyboard(
+                onKeyPressed: (letter) => _crosswordKey.currentState?.handleKeyboardLetter(letter),
+                onBackspace: () => _crosswordKey.currentState?.handleKeyboardBackspace(),
+                onEnter: () => _crosswordKey.currentState?.handleKeyboardEnter(),
+              ),
           ],
         ),
       ),

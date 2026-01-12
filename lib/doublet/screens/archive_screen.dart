@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/widgets/app_footer.dart';
 import '../core/constants/ui_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../providers/providers.dart';
@@ -40,8 +41,16 @@ class DoubletArchiveScreen extends ConsumerWidget {
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: releasedIndices.length,
+                        itemCount: releasedIndices.length + 1, // +1 for footer
                         itemBuilder: (context, index) {
+                          // Footer at the end
+                          if (index == releasedIndices.length) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 16),
+                              child: AppFooter(),
+                            );
+                          }
+
                           // Show most recent first
                           final puzzleIndex =
                               releasedIndices[releasedIndices.length - 1 - index];

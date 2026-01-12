@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../../core/widgets/stats_bar.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
@@ -29,6 +31,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMixin {
   final TextEditingController _answerController = TextEditingController();
+  final FocusNode _answerFocusNode = FocusNode();
   final StorageService _storageService = StorageService();
 
   bool _isCorrect = false;
@@ -37,6 +40,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   int _hintsUsed = 0;
   List<bool> _hintsRevealed = [false, false, false];
   bool _helpDialogShown = false;
+
+  bool get _useCustomKeyboard {
+    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  }
 
   // Timer for scoring
   DateTime? _puzzleStartTime;
@@ -114,9 +121,29 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   @override
   void dispose() {
     _answerController.dispose();
+    _answerFocusNode.dispose();
     _logoAnimationController.dispose();
     _scoreTimer?.cancel();
     super.dispose();
+  }
+
+  void _onKeyboardKey(String letter) {
+    _answerController.text = _answerController.text + letter;
+    _answerController.selection = TextSelection.collapsed(
+      offset: _answerController.text.length,
+    );
+  }
+
+  void _onKeyboardBackspace() {
+    if (_answerController.text.isNotEmpty) {
+      _answerController.text = _answerController.text.substring(
+        0,
+        _answerController.text.length - 1,
+      );
+      _answerController.selection = TextSelection.collapsed(
+        offset: _answerController.text.length,
+      );
+    }
   }
 
   void _startScoreTimer() {
@@ -554,12 +581,16 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
         child: Column(
           children: [
             Expanded(child: _buildBody(gameState)),
-            if (completedCount > 0)
-              StatsBar(
-                streak: streak,
-                played: completedCount,
+            // Custom keyboard - show when puzzle is ready and not yet solved
+            if (_useCustomKeyboard &&
+                gameState.state == AlmanacPuzzleState.ready &&
+                !_isCorrect &&
+                !_hasSubmitted)
+              GameKeyboard(
+                onKeyPressed: _onKeyboardKey,
+                onBackspace: _onKeyboardBackspace,
+                onEnter: _submitAnswer,
               ),
-            const AppFooter(),
           ],
         ),
       ),
@@ -745,6 +776,11 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
               // Answer section
               _buildAnswerSection(),
+
+              const SizedBox(height: 24),
+
+              // Footer
+              const AppFooter(),
             ],
           ),
         ),
@@ -932,6 +968,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           children: [
             TextField(
               controller: _answerController,
+              focusNode: _answerFocusNode,
+              readOnly: _useCustomKeyboard,
+              showCursor: true,
+              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +7,7 @@ import '../../core/constants/route_names.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
 
@@ -326,12 +328,37 @@ class PuzzleDetailPage extends ConsumerStatefulWidget {
 
 class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
   final TextEditingController _answerController = TextEditingController();
+  final FocusNode _answerFocusNode = FocusNode();
   bool? _isCorrect;
+
+  bool get _useCustomKeyboard {
+    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  }
 
   @override
   void dispose() {
     _answerController.dispose();
+    _answerFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onKeyboardKey(String letter) {
+    _answerController.text = _answerController.text + letter;
+    _answerController.selection = TextSelection.collapsed(
+      offset: _answerController.text.length,
+    );
+  }
+
+  void _onKeyboardBackspace() {
+    if (_answerController.text.isNotEmpty) {
+      _answerController.text = _answerController.text.substring(
+        0,
+        _answerController.text.length - 1,
+      );
+      _answerController.selection = TextSelection.collapsed(
+        offset: _answerController.text.length,
+      );
+    }
   }
 
   void _submitAnswer() {
@@ -398,64 +425,79 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    color: Theme.of(context).cardTheme.color,
-                    child: Image.network(
-                      widget.puzzle.imageUrl,
-                      fit: BoxFit.contain,
-                      cacheWidth: 800,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 300,
-                          color: Theme.of(context).cardTheme.color,
-                          child: Center(
-                            child: CircularProgressIndicator(color: AxiomColors.cyan),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            color: Theme.of(context).cardTheme.color,
+                            child: Image.network(
+                              widget.puzzle.imageUrl,
+                              fit: BoxFit.contain,
+                              cacheWidth: 800,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  height: 300,
+                                  color: Theme.of(context).cardTheme.color,
+                                  child: Center(
+                                    child: CircularProgressIndicator(color: AxiomColors.cyan),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 300,
+                                  color: Theme.of(context).cardTheme.color,
+                                  child: Center(
+                                    child: Icon(Icons.broken_image, size: 64, color: AxiomColors.pink),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 300,
-                          color: Theme.of(context).cardTheme.color,
-                          child: Center(
-                            child: Icon(Icons.broken_image, size: 64, color: AxiomColors.pink),
+                        ),
+                        const SizedBox(height: 24),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Text(
+                              widget.puzzle.description,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontSize: 18,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 24),
+                        _buildAnswerSection(),
+                        const SizedBox(height: 16),
+                        const AppFooter(),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      widget.puzzle.description,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontSize: 18,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _buildAnswerSection(),
-                const SizedBox(height: 16),
-                const AppFooter(),
-              ],
+              ),
             ),
-          ),
+            // Custom keyboard - show when not yet answered
+            if (_useCustomKeyboard && _isCorrect == null)
+              GameKeyboard(
+                onKeyPressed: _onKeyboardKey,
+                onBackspace: _onKeyboardBackspace,
+                onEnter: _submitAnswer,
+              ),
+          ],
         ),
       ),
     );
@@ -568,6 +610,10 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
             const SizedBox(height: 16),
             TextField(
               controller: _answerController,
+              focusNode: _answerFocusNode,
+              readOnly: _useCustomKeyboard,
+              showCursor: true,
+              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',
