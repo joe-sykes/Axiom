@@ -34,8 +34,14 @@ class _DoubletHomeState extends ConsumerState<DoubletHome> {
   Future<void> _initializeAndShowHelp() async {
     // First initialize services
     if (!_initialized) {
-      _initialized = true;
-      await initializeDoubletServices(ref);
+      try {
+        await initializeDoubletServices(ref);
+        _initialized = true;
+      } catch (e) {
+        debugPrint('Failed to initialize Doublet services: $e');
+        // Allow retry on next screen visit
+        _initialized = false;
+      }
     }
 
     // Then check if we should show help (after services are ready)
@@ -165,8 +171,6 @@ class _DoubletHomeState extends ConsumerState<DoubletHome> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        const AppFooter(),
                       ],
                     ),
                   ),

@@ -48,6 +48,12 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
   }
 
   Future<void> _initializeGame() async {
+    // Ensure dictionary is loaded (in case user navigated directly to game)
+    final dictionary = ref.read(dictionaryServiceProvider);
+    if (!dictionary.isLoaded) {
+      await dictionary.ensureLoaded();
+    }
+
     final puzzleAsync = await ref.read(puzzleProvider(_effectiveIndex).future);
     _setupControllers(puzzleAsync.inputCount);
 
@@ -87,10 +93,10 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
     super.dispose();
   }
 
-  // Check if we should use the custom on-screen keyboard
-  bool get _useCustomKeyboard {
-    // Use custom keyboard on mobile platforms and web
-    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  // Check if we should use the custom on-screen keyboard (only on small screens)
+  bool _useCustomKeyboard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 600;
   }
 
   int? get _focusedIndex {
@@ -607,7 +613,7 @@ https://axiompuzzles.web.app
                             },
                             validator: validator,
                             stepNumber: index + 2,
-                            useCustomKeyboard: _useCustomKeyboard,
+                            useCustomKeyboard: _useCustomKeyboard(context),
                           ),
                         );
                       }),
@@ -656,61 +662,47 @@ https://axiompuzzles.web.app
                           ),
                         ),
 
-                      // Extra padding at bottom to ensure end word is visible above keyboard
-                      const SizedBox(height: 16),
+                      // Action buttons
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Semantics(
+                            button: true,
+                            label: 'Give up and see the solution',
+                            child: TextButton(
+                              onPressed: () => _giveUp(puzzle),
+                              child: const Text('Give Up'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Semantics(
+                            button: true,
+                            label: _isSubmitting ? 'Submitting answer' : 'Submit your answer',
+                            child: FilledButton.icon(
+                              onPressed: _isSubmitting ? null : () => _submitSolution(puzzle),
+                              icon: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.check),
+                              label: const Text('Submit'),
+                            ),
+                          ),
+                        ],
+                      ),
 
-                      // Footer
-                      const AppFooter(),
+                      // Extra padding at bottom to ensure content is visible above keyboard
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
               ),
 
-              // Bottom action bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Semantics(
-                      button: true,
-                      label: 'Give up and see the solution',
-                      child: TextButton(
-                        onPressed: () => _giveUp(puzzle),
-                        child: const Text('Give Up'),
-                      ),
-                    ),
-                    const Spacer(),
-                    Semantics(
-                      button: true,
-                      label: _isSubmitting ? 'Submitting answer' : 'Submit your answer',
-                      child: FilledButton.icon(
-                        onPressed: _isSubmitting ? null : () => _submitSolution(puzzle),
-                        icon: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.check),
-                        label: const Text('Submit'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               // Custom keyboard
-              if (_useCustomKeyboard)
+              if (_useCustomKeyboard(context))
                 GameKeyboard(
                   onKeyPressed: (letter) => _onKeyboardKey(letter, puzzle),
                   onBackspace: () => _onKeyboardBackspace(puzzle),

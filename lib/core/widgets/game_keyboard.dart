@@ -18,6 +18,7 @@ class GameKeyboard extends StatelessWidget {
     this.enterLabel = 'ENTER',
   });
 
+  static const _numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
   static const _row1 = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'];
   static const _row2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
   static const _row3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
@@ -44,6 +45,8 @@ class GameKeyboard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildRow(context, _numbers),
+            const SizedBox(height: 6),
             _buildRow(context, _row1),
             const SizedBox(height: 6),
             _buildRow(context, _row2),

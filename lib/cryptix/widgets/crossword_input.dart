@@ -78,7 +78,16 @@ class CrosswordInputState extends State<CrosswordInput> {
         }
       }
     }
-    _focusNodes = List.generate(widget.length, (_) => FocusNode());
+    _focusNodes = List.generate(widget.length, (i) {
+      final node = FocusNode();
+      // Update _focusedIndex when this node gains focus
+      node.addListener(() {
+        if (node.hasFocus && _focusedIndex != i) {
+          setState(() => _focusedIndex = i);
+        }
+      });
+      return node;
+    });
     _controllers = List.generate(
       widget.length,
       (i) => TextEditingController(text: _letters[i]),
@@ -431,6 +440,7 @@ class CrosswordInputState extends State<CrosswordInput> {
     }
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: widget.isLocked || isRevealed
           ? null
           : () {
@@ -449,54 +459,47 @@ class CrosswordInputState extends State<CrosswordInput> {
             right: BorderSide(color: borderColor, width: index == widget.length - 1 ? (isFocused ? 2 : 1) : 0.5),
           ),
         ),
-        child: widget.isLocked || isRevealed
-            ? Center(
-                child: Text(
-                  _letters[index].toUpperCase(),
+        child: Focus(
+          focusNode: widget.useCustomKeyboard ? _focusNodes[index] : null,
+          onKeyEvent: (node, event) {
+            _handleKeyEvent(index, event);
+            return KeyEventResult.handled;
+          },
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Visible letter
+                Text(
+                  widget.isLocked || isRevealed || widget.isCorrect
+                      ? _letters[index].toUpperCase()
+                      : _letters[index].toUpperCase(),
                   style: TextStyle(
                     fontSize: cellSize * 0.45,
                     fontWeight: FontWeight.bold,
                     color: widget.isCorrect
-                        ? (isDark
-                            ? const Color(0xFF69F0AE)
-                            : const Color(0xFF4CAF50))
+                        ? (isDark ? const Color(0xFF69F0AE) : const Color(0xFF4CAF50))
                         : isRevealed
                             ? theme.colorScheme.tertiary
-                            : theme.colorScheme.onSurface,
+                            : textColor ?? theme.colorScheme.onSurface,
                   ),
                 ),
-              )
-            : KeyboardListener(
-                focusNode: FocusNode(),
-                onKeyEvent: (event) => _handleKeyEvent(index, event),
-                child: Stack(
-                  children: [
-                    // Visible centered letter
-                    Center(
-                      child: Text(
-                        _letters[index].toUpperCase(),
-                        style: TextStyle(
-                          fontSize: cellSize * 0.45,
-                          fontWeight: FontWeight.bold,
-                          color: textColor ?? theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    // Invisible TextField for input
-                    Opacity(
-                      opacity: 0,
+                // Hidden text field for native input
+                if (!widget.isLocked && !isRevealed)
+                  Opacity(
+                    opacity: 0,
+                    child: SizedBox(
+                      width: cellSize,
+                      height: cellSize,
                       child: TextField(
-                        focusNode: _focusNodes[index],
                         controller: _controllers[index],
+                        focusNode: widget.useCustomKeyboard ? null : _focusNodes[index],
                         textAlign: TextAlign.center,
                         textCapitalization: TextCapitalization.characters,
                         maxLength: 1,
-                        readOnly: widget.useCustomKeyboard,
                         showCursor: false,
+                        readOnly: widget.useCustomKeyboard,
                         keyboardType: widget.useCustomKeyboard ? TextInputType.none : null,
-                        style: TextStyle(
-                          fontSize: cellSize * 0.45,
-                        ),
                         decoration: const InputDecoration(
                           counterText: '',
                           border: InputBorder.none,
@@ -508,9 +511,11 @@ class CrosswordInputState extends State<CrosswordInput> {
                         onChanged: widget.useCustomKeyboard ? null : (value) => _onLetterChanged(index, value),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

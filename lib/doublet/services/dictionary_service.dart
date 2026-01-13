@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// Service for validating words against the Scrabble dictionary
 class DictionaryService {
   Set<String>? _dictionary;
   bool _isLoaded = false;
+  bool _isLoading = false;
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
 
   /// Whether the dictionary has been loaded
   bool get isLoaded => _isLoaded;
@@ -11,9 +15,18 @@ class DictionaryService {
   /// Number of words in the dictionary
   int get wordCount => _dictionary?.length ?? 0;
 
-  /// Load dictionary from bundled asset
+  /// Load dictionary from bundled asset with retry logic
   Future<void> initialize() async {
     if (_isLoaded) return;
+    if (_isLoading) {
+      // Wait for ongoing load to complete
+      while (_isLoading) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return;
+    }
+
+    _isLoading = true;
 
     try {
       final content = await rootBundle.loadString('assets/dictionary.txt');
@@ -24,8 +37,36 @@ class DictionaryService {
           .toSet();
 
       _isLoaded = true;
+      _retryCount = 0;
+      debugPrint('Dictionary loaded: ${_dictionary!.length} words');
     } catch (e) {
-      throw DictionaryLoadException('Failed to load dictionary: $e');
+      debugPrint('Dictionary load failed (attempt ${_retryCount + 1}): $e');
+      _retryCount++;
+
+      if (_retryCount < _maxRetries) {
+        _isLoading = false;
+        // Retry after a short delay
+        await Future.delayed(Duration(milliseconds: 100 * _retryCount));
+        return initialize();
+      }
+
+      throw DictionaryLoadException('Failed to load dictionary after $_maxRetries attempts: $e');
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  /// Ensure dictionary is loaded, with retry if needed
+  Future<bool> ensureLoaded() async {
+    if (_isLoaded) return true;
+
+    try {
+      _retryCount = 0; // Reset retry count for fresh attempt
+      await initialize();
+      return _isLoaded;
+    } catch (e) {
+      debugPrint('ensureLoaded failed: $e');
+      return false;
     }
   }
 

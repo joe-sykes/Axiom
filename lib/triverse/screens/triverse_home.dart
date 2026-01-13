@@ -283,7 +283,6 @@ Play the daily trivia at https://axiompuzzles.web.app
                 ),
               ),
             ),
-            const AppFooter(),
           ],
         ),
       ),

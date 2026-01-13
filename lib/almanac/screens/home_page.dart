@@ -41,8 +41,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   List<bool> _hintsRevealed = [false, false, false];
   bool _helpDialogShown = false;
 
-  bool get _useCustomKeyboard {
-    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  // Check if we should use the custom on-screen keyboard (only on small screens)
+  bool _useCustomKeyboard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 600;
   }
 
   // Timer for scoring
@@ -582,7 +584,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           children: [
             Expanded(child: _buildBody(gameState)),
             // Custom keyboard - show when puzzle is ready and not yet solved
-            if (_useCustomKeyboard &&
+            if (_useCustomKeyboard(context) &&
                 gameState.state == AlmanacPuzzleState.ready &&
                 !_isCorrect &&
                 !_hasSubmitted)
@@ -780,7 +782,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
               const SizedBox(height: 24),
 
               // Footer
-              const AppFooter(),
             ],
           ),
         ),
@@ -817,6 +818,8 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
             ),
             const SizedBox(height: 12),
             ...List.generate(hints.length, (index) {
+              // Only allow revealing hints in order (must reveal previous hint first)
+              final canReveal = index == 0 || _hintsRevealed[index - 1];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _hintsRevealed[index]
@@ -834,7 +837,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                         ),
                       )
                     : OutlinedButton(
-                        onPressed: () => _revealHint(index),
+                        onPressed: canReveal ? () => _revealHint(index) : null,
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
                         ),
@@ -969,9 +972,9 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
             TextField(
               controller: _answerController,
               focusNode: _answerFocusNode,
-              readOnly: _useCustomKeyboard,
+              readOnly: _useCustomKeyboard(context),
               showCursor: true,
-              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
+              keyboardType: _useCustomKeyboard(context) ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

@@ -41,16 +41,8 @@ class DoubletArchiveScreen extends ConsumerWidget {
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: releasedIndices.length + 1, // +1 for footer
+                        itemCount: releasedIndices.length,
                         itemBuilder: (context, index) {
-                          // Footer at the end
-                          if (index == releasedIndices.length) {
-                            return const Padding(
-                              padding: EdgeInsets.only(top: 16),
-                              child: AppFooter(),
-                            );
-                          }
-
                           // Show most recent first
                           final puzzleIndex =
                               releasedIndices[releasedIndices.length - 1 - index];

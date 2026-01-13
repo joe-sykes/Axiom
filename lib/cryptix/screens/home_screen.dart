@@ -28,8 +28,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _helpChecked = false;
   final GlobalKey<CrosswordInputState> _crosswordKey = GlobalKey();
 
-  bool get _useCustomKeyboard {
-    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  // Check if we should use the custom on-screen keyboard (only on small screens)
+  bool _useCustomKeyboard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 600;
   }
 
   @override
@@ -215,7 +217,7 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
               child: _buildBody(context, gameState, theme, dateFormat),
             ),
             // Custom keyboard
-            if (_useCustomKeyboard && gameState.state == CryptixPuzzleState.ready)
+            if (_useCustomKeyboard(context) && gameState.state == CryptixPuzzleState.ready)
               GameKeyboard(
                 onKeyPressed: (letter) => _crosswordKey.currentState?.handleKeyboardLetter(letter),
                 onBackspace: () => _crosswordKey.currentState?.handleKeyboardBackspace(),
@@ -318,7 +320,7 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
 
                     // Crossword input - key forces rebuild when revealed letters change
                     CrosswordInput(
-                      key: _useCustomKeyboard ? _crosswordKey : ValueKey(gameState.revealedLetters.join(',')),
+                      key: _useCustomKeyboard(context) ? _crosswordKey : ValueKey(gameState.revealedLetters.join(',')),
                       length: puzzle.length,
                       isLocked: isSolved,
                       isCorrect: isSolved,
@@ -332,7 +334,7 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
                       showWrongLetters: _showWrongLetters,
                       onShowDefinition: isSolved ? null : () => _useHint(),
                       hintUsed: gameState.hintUsed,
-                      useCustomKeyboard: _useCustomKeyboard,
+                      useCustomKeyboard: _useCustomKeyboard(context),
                     ),
 
                     // Incorrect feedback
@@ -394,7 +396,6 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
                       StatsCard(stats: gameState.stats),
                     ],
                     const SizedBox(height: 24),
-                    const AppFooter(),
                   ],
                 ),
               ),

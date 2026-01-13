@@ -38,13 +38,16 @@ class GameValidator {
 
   /// Validate complete ladder at submission time
   /// This checks if user solution forms a valid word ladder path
-  GameValidationResult validateSubmission({
+  Future<GameValidationResult> validateSubmission({
     required Puzzle puzzle,
     required List<String> userWords,
-  }) {
+  }) async {
     // Ensure dictionary is loaded before validating submission
     if (!_dictionaryService.isLoaded) {
-      return GameValidationResult.incorrect('Dictionary not loaded. Please wait a moment and try again.');
+      final loaded = await _dictionaryService.ensureLoaded();
+      if (!loaded) {
+        return GameValidationResult.incorrect('Dictionary failed to load. Please refresh and try again.');
+      }
     }
 
     // Check all words entered

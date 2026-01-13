@@ -232,7 +232,6 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
                 ),
               ),
               const SliverToBoxAdapter(
-                child: AppFooter(),
               ),
             ],
           );
@@ -331,8 +330,10 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
   final FocusNode _answerFocusNode = FocusNode();
   bool? _isCorrect;
 
-  bool get _useCustomKeyboard {
-    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  // Check if we should use the custom on-screen keyboard (only on small screens)
+  bool _useCustomKeyboard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 600;
   }
 
   @override
@@ -483,7 +484,6 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
                         const SizedBox(height: 24),
                         _buildAnswerSection(),
                         const SizedBox(height: 16),
-                        const AppFooter(),
                       ],
                     ),
                   ),
@@ -491,7 +491,7 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
               ),
             ),
             // Custom keyboard - show when not yet answered
-            if (_useCustomKeyboard && _isCorrect == null)
+            if (_useCustomKeyboard(context) && _isCorrect == null)
               GameKeyboard(
                 onKeyPressed: _onKeyboardKey,
                 onBackspace: _onKeyboardBackspace,
@@ -611,9 +611,9 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
             TextField(
               controller: _answerController,
               focusNode: _answerFocusNode,
-              readOnly: _useCustomKeyboard,
+              readOnly: _useCustomKeyboard(context),
               showCursor: true,
-              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
+              keyboardType: _useCustomKeyboard(context) ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

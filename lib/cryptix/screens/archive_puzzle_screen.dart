@@ -29,8 +29,10 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
   bool _showIncorrectFeedback = false;
   final GlobalKey<CrosswordInputState> _crosswordKey = GlobalKey();
 
-  bool get _useCustomKeyboard {
-    return !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android) || kIsWeb;
+  // Check if we should use the custom on-screen keyboard (only on small screens)
+  bool _useCustomKeyboard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 600;
   }
 
   @override
@@ -199,14 +201,14 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
 
                           // Crossword input
                           CrosswordInput(
-                            key: _useCustomKeyboard ? _crosswordKey : null,
+                            key: _useCustomKeyboard(context) ? _crosswordKey : null,
                             length: widget.puzzle.length,
                             isLocked: _solved,
                             isCorrect: _solved,
                             correctAnswer: widget.puzzle.answer,
                             canRevealLetter: false,
                             onSubmit: _handleSubmit,
-                            useCustomKeyboard: _useCustomKeyboard,
+                            useCustomKeyboard: _useCustomKeyboard(context),
                           ),
 
                           // Incorrect feedback
@@ -270,7 +272,6 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
                             ),
                           ],
                           const SizedBox(height: 24),
-                          const AppFooter(),
                         ],
                       ),
                     ),
@@ -279,7 +280,7 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
               ),
             ),
             // Custom keyboard
-            if (_useCustomKeyboard && !_solved)
+            if (_useCustomKeyboard(context) && !_solved)
               GameKeyboard(
                 onKeyPressed: (letter) => _crosswordKey.currentState?.handleKeyboardLetter(letter),
                 onBackspace: () => _crosswordKey.currentState?.handleKeyboardBackspace(),

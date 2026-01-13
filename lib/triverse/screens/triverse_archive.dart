@@ -92,16 +92,8 @@ class TriverseArchiveScreen extends ConsumerWidget {
 
                         return ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemCount: puzzles.length + 1, // +1 for footer
+                          itemCount: puzzles.length,
                           itemBuilder: (context, index) {
-                            // Footer at the end
-                            if (index == puzzles.length) {
-                              return const Padding(
-                                padding: EdgeInsets.only(top: 16),
-                                child: AppFooter(),
-                              );
-                            }
-
                             final puzzle = puzzles[index];
                             final isCompleted = completed.contains(puzzle.date);
                             final score = scores[puzzle.date];
@@ -131,16 +123,8 @@ class TriverseArchiveScreen extends ConsumerWidget {
                       },
                       loading: () => ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: puzzles.length + 1, // +1 for footer
+                        itemCount: puzzles.length,
                         itemBuilder: (context, index) {
-                          // Footer at the end
-                          if (index == puzzles.length) {
-                            return const Padding(
-                              padding: EdgeInsets.only(top: 16),
-                              child: AppFooter(),
-                            );
-                          }
-
                           final puzzle = puzzles[index];
                           return _ArchiveItem(
                             puzzle: puzzle,
@@ -163,16 +147,8 @@ class TriverseArchiveScreen extends ConsumerWidget {
                       ),
                       error: (_, __) => ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        itemCount: puzzles.length + 1, // +1 for footer
+                        itemCount: puzzles.length,
                         itemBuilder: (context, index) {
-                          // Footer at the end
-                          if (index == puzzles.length) {
-                            return const Padding(
-                              padding: EdgeInsets.only(top: 16),
-                              child: AppFooter(),
-                            );
-                          }
-
                           final puzzle = puzzles[index];
                           return _ArchiveItem(
                             puzzle: puzzle,

@@ -111,7 +111,7 @@ class GameStateNotifier extends StateNotifier<GameSession?> {
     }
 
     final validator = _ref.read(gameValidatorProvider);
-    final result = validator.validateSubmission(
+    final result = await validator.validateSubmission(
       puzzle: puzzle,
       userWords: state!.enteredWords,
     );
