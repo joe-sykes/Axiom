@@ -462,8 +462,35 @@ class CrosswordInputState extends State<CrosswordInput> {
         child: Focus(
           focusNode: widget.useCustomKeyboard ? _focusNodes[index] : null,
           onKeyEvent: (node, event) {
-            _handleKeyEvent(index, event);
-            return KeyEventResult.handled;
+            if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+            // Handle navigation keys on all platforms
+            if (event.logicalKey == LogicalKeyboardKey.backspace) {
+              if (_letters[index].isEmpty) {
+                // Move to previous cell if current is empty
+                _focusPrevious(index);
+              } else {
+                // Clear current cell
+                setState(() {
+                  _letters[index] = '';
+                  _controllers[index].clear();
+                });
+                widget.onLettersChanged?.call(List<String>.from(_letters));
+              }
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              _focusPrevious(index);
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              _focusNext(index);
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+              _handleSubmit();
+              return KeyEventResult.handled;
+            }
+
+            // For custom keyboard, handle all keys; for desktop, let TextField handle letters
+            return widget.useCustomKeyboard ? KeyEventResult.handled : KeyEventResult.ignored;
           },
           child: Center(
             child: Stack(
