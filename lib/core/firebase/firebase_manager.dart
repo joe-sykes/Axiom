@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'almanac_firebase.dart';
 import 'cryptix_firebase.dart';
+import 'cryptogram_firebase.dart';
 import 'doublet_firebase.dart';
 import 'triverse_firebase.dart';
 
@@ -11,6 +12,7 @@ import 'triverse_firebase.dart';
 class FirebaseManager {
   static FirebaseApp? _almanacApp;
   static FirebaseApp? _cryptixApp;
+  static FirebaseApp? _cryptogramApp;
   static FirebaseApp? _doubletApp;
   static FirebaseApp? _triverseApp;
 
@@ -42,6 +44,12 @@ class FirebaseManager {
     _triverseApp = await Firebase.initializeApp(
       name: 'triverse',
       options: TriverseFirebaseOptions.currentPlatform,
+    );
+
+    // Initialize Cryptogram as a secondary app
+    _cryptogramApp = await Firebase.initializeApp(
+      name: 'cryptogram',
+      options: CryptogramFirebaseOptions.currentPlatform,
     );
 
     _initialized = true;
@@ -97,5 +105,18 @@ class FirebaseManager {
   /// Get Firestore instance for Triverse
   static FirebaseFirestore get triverseFirestore {
     return FirebaseFirestore.instanceFor(app: triverseApp);
+  }
+
+  /// Get the Cryptogram Firebase app
+  static FirebaseApp get cryptogramApp {
+    if (_cryptogramApp == null) {
+      throw StateError('FirebaseManager not initialized. Call initializeAll() first.');
+    }
+    return _cryptogramApp!;
+  }
+
+  /// Get Firestore instance for Cryptogram
+  static FirebaseFirestore get cryptogramFirestore {
+    return FirebaseFirestore.instanceFor(app: cryptogramApp);
   }
 }

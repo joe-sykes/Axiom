@@ -58,32 +58,6 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
     );
   }
 
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final day = date.day;
-      String suffix;
-      if (day >= 11 && day <= 13) {
-        suffix = 'th';
-      } else {
-        switch (day % 10) {
-          case 1:
-            suffix = 'st';
-          case 2:
-            suffix = 'nd';
-          case 3:
-            suffix = 'rd';
-          default:
-            suffix = 'th';
-        }
-      }
-      final month = DateFormat('MMMM').format(date);
-      return '$day$suffix $month';
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
   void _goHome() {
     Navigator.pushNamedAndRemoveUntil(context, RouteNames.home, (route) => false);
   }
@@ -110,7 +84,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.image_search),
+                Icon(Icons.lightbulb_outline),
                 SizedBox(width: 10),
                 Text('ALMANAC'),
               ],
@@ -185,131 +159,105 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
       );
     }
 
-    return RefreshIndicator(
-      color: AxiomColors.cyan,
-      onRefresh: _loadPastPuzzles,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenWidth = constraints.maxWidth;
-          int crossAxisCount = 1;
-          if (screenWidth >= 1200) {
-            crossAxisCount = 4;
-          } else if (screenWidth >= 900) {
-            crossAxisCount = 3;
-          } else if (screenWidth >= 600) {
-            crossAxisCount = 2;
-          }
+    final theme = Theme.of(context);
 
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Puzzle Archive',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'ARCHIVE',
+              style: theme.textTheme.headlineMedium,
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AxiomColors.cyan,
+              onRefresh: _loadPastPuzzles,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _puzzles.length,
+                    itemBuilder: (context, index) {
                       final puzzle = _puzzles[index];
-                      return _buildPuzzleCard(puzzle);
+                      return _ArchiveItem(
+                        puzzle: puzzle,
+                        onTap: () => _openPuzzleDetail(puzzle),
+                      );
                     },
-                    childCount: _puzzles.length,
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildPuzzleCard(AlmanacPuzzle puzzle) {
+class _ArchiveItem extends StatelessWidget {
+  final AlmanacPuzzle puzzle;
+  final VoidCallback onTap;
+
+  const _ArchiveItem({
+    required this.puzzle,
+    required this.onTap,
+  });
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('d MMMM yyyy').format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => _openPuzzleDetail(puzzle),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: Image.network(
-                  puzzle.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  cacheWidth: 400,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      child: Center(
-                        child: CircularProgressIndicator(color: AxiomColors.cyan),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(puzzle.date),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      child: Center(
-                        child: Icon(Icons.broken_image, color: AxiomColors.pink),
-                      ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      puzzle.description,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AxiomColors.darkNavy,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _formatDate(puzzle.date),
-                      style: TextStyle(
-                        color: AxiomColors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    puzzle.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Icon(
+                Icons.play_circle_outline,
+                size: 32,
+                color: theme.colorScheme.tertiary,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -438,37 +386,6 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            color: Theme.of(context).cardTheme.color,
-                            child: Image.network(
-                              widget.puzzle.imageUrl,
-                              fit: BoxFit.contain,
-                              cacheWidth: 800,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  height: 300,
-                                  color: Theme.of(context).cardTheme.color,
-                                  child: Center(
-                                    child: CircularProgressIndicator(color: AxiomColors.cyan),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  height: 300,
-                                  color: Theme.of(context).cardTheme.color,
-                                  child: Center(
-                                    child: Icon(Icons.broken_image, size: 64, color: AxiomColors.pink),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
                         Card(
                           child: Padding(
                             padding: const EdgeInsets.all(20),

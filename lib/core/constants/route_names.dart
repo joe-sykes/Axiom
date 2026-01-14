@@ -28,4 +28,8 @@ class RouteNames {
   static const triversePlay = '/triverse/play';
   static const triverseArchive = '/triverse/archive';
   static const triversePrivacy = '/triverse/privacy';
+
+  // Cryptogram routes
+  static const cryptogram = '/cryptogram';
+  static const cryptogramArchive = '/cryptogram/archive';
 }

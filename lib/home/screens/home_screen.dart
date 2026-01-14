@@ -7,6 +7,7 @@ import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../cryptix/providers/cryptix_providers.dart';
+import '../../cryptogram/providers/cryptogram_providers.dart';
 import '../../doublet/providers/providers.dart';
 import '../../triverse/providers/triverse_providers.dart';
 
@@ -31,6 +32,10 @@ class AxiomHomeScreen extends ConsumerWidget {
     final triverseStreak = triverseStreakAsync.valueOrNull ?? 0;
     final triverseCompletedAsync = ref.watch(triverseCompletedCountProvider);
     final triverseCompleted = triverseCompletedAsync.valueOrNull ?? 0;
+    final cryptogramStreakAsync = ref.watch(cryptogramStreakProvider);
+    final cryptogramStreak = cryptogramStreakAsync.valueOrNull ?? 0;
+    final cryptogramSolvedAsync = ref.watch(cryptogramTotalSolvedProvider);
+    final cryptogramSolved = cryptogramSolvedAsync.valueOrNull ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,87 +71,111 @@ class AxiomHomeScreen extends ConsumerWidget {
           builder: (context, constraints) {
             final crossAxisCount = constraints.maxWidth > 800 ? 4 : (constraints.maxWidth > 500 ? 2 : 1);
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  Text(
-                    'DAILY PUZZLES',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Choose your challenge',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Game cards
-                  GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: crossAxisCount == 1 ? 1.6 : 1.0,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        _GameCard(
-                          title: 'Almanac',
-                          subtitle: 'Daily Image Puzzle',
-                          icon: Icons.image_search,
-                          accentColor: AxiomColors.almanacAccent,
-                          route: RouteNames.almanac,
-                          streak: almanacStreak > 0 ? almanacStreak : null,
-                          played: almanacCompleted > 0 ? almanacCompleted : null,
-                        ),
-                        _GameCard(
-                          title: 'Cryptix',
-                          subtitle: 'Daily Cryptic Clue',
-                          icon: Icons.quiz_outlined,
-                          accentColor: AxiomColors.cryptixAccent,
-                          route: RouteNames.cryptix,
-                          streak: cryptixState.stats.currentStreak > 0
-                              ? cryptixState.stats.currentStreak
-                              : null,
-                          played: cryptixState.stats.totalSolved > 0
-                              ? cryptixState.stats.totalSolved
-                              : null,
-                        ),
-                        _GameCard(
-                          title: 'Doublet',
-                          subtitle: 'Daily Word Ladder',
-                          icon: Icons.linear_scale,
-                          accentColor: AxiomColors.doubletAccent,
-                          route: RouteNames.doubletPlay,
-                          streak: doubletStats.currentStreak > 0
-                              ? doubletStats.currentStreak
-                              : null,
-                          played: doubletStats.totalGamesPlayed > 0
-                              ? doubletStats.totalGamesPlayed
-                              : null,
-                        ),
-                        _GameCard(
-                          title: 'Triverse',
-                          subtitle: 'Daily Trivia Challenge',
-                          icon: Icons.bolt,
-                          accentColor: AxiomColors.triverseAccent,
-                          route: RouteNames.triverse,
-                          streak: triverseStreak > 0 ? triverseStreak : null,
-                          played: triverseCompleted > 0 ? triverseCompleted : null,
-                        ),
+                      // Main content
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header
+                          Text(
+                            'DAILY PUZZLES',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Choose your challenge',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Game cards
+                          GridView.count(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: crossAxisCount == 1 ? 1.6 : 1.0,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                                _GameCard(
+                                  title: 'Almanac',
+                                  subtitle: 'Daily Logic Puzzle',
+                                  icon: Icons.lightbulb_outline,
+                                  accentColor: AxiomColors.almanacAccent,
+                                  route: RouteNames.almanac,
+                                  streak: almanacStreak > 0 ? almanacStreak : null,
+                                  played: almanacCompleted > 0 ? almanacCompleted : null,
+                                ),
+                                _GameCard(
+                                  title: 'Cryptix',
+                                  subtitle: 'Daily Cryptic Clue',
+                                  icon: Icons.quiz_outlined,
+                                  accentColor: AxiomColors.cryptixAccent,
+                                  route: RouteNames.cryptix,
+                                  streak: cryptixState.stats.currentStreak > 0
+                                      ? cryptixState.stats.currentStreak
+                                      : null,
+                                  played: cryptixState.stats.totalSolved > 0
+                                      ? cryptixState.stats.totalSolved
+                                      : null,
+                                ),
+                                _GameCard(
+                                  title: 'Doublet',
+                                  subtitle: 'Daily Word Ladder',
+                                  icon: Icons.linear_scale,
+                                  accentColor: AxiomColors.doubletAccent,
+                                  route: RouteNames.doubletPlay,
+                                  streak: doubletStats.currentStreak > 0
+                                      ? doubletStats.currentStreak
+                                      : null,
+                                  played: doubletStats.totalGamesPlayed > 0
+                                      ? doubletStats.totalGamesPlayed
+                                      : null,
+                                ),
+                                _GameCard(
+                                  title: 'Triverse',
+                                  subtitle: 'Daily Trivia Challenge',
+                                  icon: Icons.bolt,
+                                  accentColor: AxiomColors.triverseAccent,
+                                  route: RouteNames.triverse,
+                                  streak: triverseStreak > 0 ? triverseStreak : null,
+                                  played: triverseCompleted > 0 ? triverseCompleted : null,
+                                ),
+                                _GameCard(
+                                  title: 'Cryptogram',
+                                  subtitle: 'Daily Quote Cipher',
+                                  icon: Icons.lock_outline,
+                                  accentColor: AxiomColors.cryptogramAccent,
+                                  route: RouteNames.cryptogram,
+                                  streak: cryptogramStreak > 0 ? cryptogramStreak : null,
+                                  played: cryptogramSolved > 0 ? cryptogramSolved : null,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Footer at bottom
+                      const Padding(
+                        padding: EdgeInsets.only(top: 24),
+                        child: AppFooter(),
+                      ),
                     ],
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Footer
-                  const AppFooter(),
-                ],
+                ),
               ),
             );
           },

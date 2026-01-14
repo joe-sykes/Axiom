@@ -30,6 +30,10 @@ import 'triverse/screens/triverse_home.dart';
 import 'triverse/screens/triverse_play.dart';
 import 'triverse/screens/triverse_archive.dart';
 
+// Cryptogram screens
+import 'cryptogram/screens/home_screen.dart' as cryptogram;
+import 'cryptogram/screens/archive_screen.dart' as cryptogram;
+
 /// Wraps a screen with a Title widget for SEO
 Widget _withTitle(String title, Widget child) {
   return Title(
@@ -154,6 +158,18 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
     case RouteNames.triversePrivacy:
       return MaterialPageRoute(
         builder: (_) => _withTitle('Privacy Policy - Axiom', const PrivacyScreen()),
+        settings: settings,
+      );
+
+    // Cryptogram routes
+    case RouteNames.cryptogram:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Cryptogram - Daily Quote Puzzle', const cryptogram.CryptogramHomeScreen()),
+        settings: settings,
+      );
+    case RouteNames.cryptogramArchive:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Cryptogram Archive - Past Quote Puzzles', const cryptogram.CryptogramArchiveScreen()),
         settings: settings,
       );
 

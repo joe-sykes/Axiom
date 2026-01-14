@@ -27,9 +27,15 @@ class GameKeyboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Use compact layout for small screens (iPhone SE, etc.)
+    final isCompact = screenHeight < 700;
+    final rowSpacing = isCompact ? 2.0 : 6.0;
+    final verticalPadding = isCompact ? 2.0 : 8.0;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: verticalPadding),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.grey.shade900
@@ -45,25 +51,26 @@ class GameKeyboard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildRow(context, _numbers),
-            const SizedBox(height: 6),
-            _buildRow(context, _row1),
-            const SizedBox(height: 6),
-            _buildRow(context, _row2),
-            const SizedBox(height: 6),
-            _buildBottomRow(context),
+            _buildRow(context, _numbers, isCompact),
+            SizedBox(height: rowSpacing),
+            _buildRow(context, _row1, isCompact),
+            SizedBox(height: rowSpacing),
+            _buildRow(context, _row2, isCompact),
+            SizedBox(height: rowSpacing),
+            _buildBottomRow(context, isCompact),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, List<String> letters) {
+  Widget _buildRow(BuildContext context, List<String> letters, bool isCompact) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: letters
           .map((letter) => _KeyButton(
                 label: letter,
+                isCompact: isCompact,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   onKeyPressed(letter);
@@ -73,7 +80,7 @@ class GameKeyboard extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomRow(BuildContext context) {
+  Widget _buildBottomRow(BuildContext context, bool isCompact) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -81,6 +88,7 @@ class GameKeyboard extends StatelessWidget {
           _KeyButton(
             label: enterLabel,
             isWide: true,
+            isCompact: isCompact,
             onTap: onEnter != null
                 ? () {
                     HapticFeedback.mediumImpact();
@@ -90,6 +98,7 @@ class GameKeyboard extends StatelessWidget {
           ),
         ..._row3.map((letter) => _KeyButton(
               label: letter,
+              isCompact: isCompact,
               onTap: () {
                 HapticFeedback.lightImpact();
                 onKeyPressed(letter);
@@ -98,6 +107,7 @@ class GameKeyboard extends StatelessWidget {
         _KeyButton(
           icon: Icons.backspace_outlined,
           isWide: true,
+          isCompact: isCompact,
           onTap: () {
             HapticFeedback.lightImpact();
             onBackspace();
@@ -112,12 +122,14 @@ class _KeyButton extends StatelessWidget {
   final String? label;
   final IconData? icon;
   final bool isWide;
+  final bool isCompact;
   final VoidCallback? onTap;
 
   const _KeyButton({
     this.label,
     this.icon,
     this.isWide = false,
+    this.isCompact = false,
     this.onTap,
   });
 
@@ -126,8 +138,13 @@ class _KeyButton extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final minHeight = isCompact ? 32.0 : 48.0;
+    final minWidth = isWide ? (isCompact ? 40.0 : 52.0) : (isCompact ? 26.0 : 32.0);
+    final fontSize = isWide ? (isCompact ? 8.0 : 11.0) : (isCompact ? 12.0 : 15.0);
+    final iconSize = isCompact ? 16.0 : 20.0;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 1.5 : 2),
       child: Material(
         color: onTap == null
             ? (isDark ? Colors.grey.shade800 : Colors.grey.shade400)
@@ -138,21 +155,21 @@ class _KeyButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           child: Container(
             constraints: BoxConstraints(
-              minWidth: isWide ? 52 : 32,
-              minHeight: 48,
+              minWidth: minWidth,
+              minHeight: minHeight,
             ),
-            padding: EdgeInsets.symmetric(horizontal: isWide ? 8 : 4),
+            padding: EdgeInsets.symmetric(horizontal: isWide ? (isCompact ? 6 : 8) : (isCompact ? 2 : 4)),
             alignment: Alignment.center,
             child: icon != null
                 ? Icon(
                     icon,
-                    size: 20,
+                    size: iconSize,
                     color: isDark ? Colors.white : Colors.black87,
                   )
                 : Text(
                     label ?? '',
                     style: TextStyle(
-                      fontSize: isWide ? 11 : 15,
+                      fontSize: fontSize,
                       fontWeight: FontWeight.bold,
                       color: onTap == null
                           ? (isDark ? Colors.grey.shade500 : Colors.grey.shade600)

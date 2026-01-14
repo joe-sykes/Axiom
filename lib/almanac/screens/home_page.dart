@@ -14,13 +14,6 @@ import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
 import '../services/storage_service.dart';
 
-/// Helper to get optimized image URL from Firebase Storage
-String getOptimizedImageUrl(String originalUrl, {int? width}) {
-  if (width == null || !originalUrl.contains('firebasestorage.googleapis.com')) {
-    return originalUrl;
-  }
-  return originalUrl;
-}
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -261,124 +254,135 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final message = _getScoreMessage(score);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isCompact = screenHeight < 700;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isCompact ? 16 : 24,
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Score icons
-                _buildScoreIcons(score),
-                const SizedBox(height: 16),
+          constraints: BoxConstraints(
+            maxWidth: 400,
+            maxHeight: screenHeight * 0.85,
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(isCompact ? 16 : 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Score icons
+                  _buildScoreIcons(score),
+                  SizedBox(height: isCompact ? 12 : 16),
 
-                // Message
-                Text(
-                  message,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AxiomColors.success : AxiomColors.successDark,
+                  // Message
+                  Text(
+                    message,
+                    style: (isCompact ? theme.textTheme.titleLarge : theme.textTheme.headlineMedium)?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AxiomColors.success : AxiomColors.successDark,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
+                  SizedBox(height: isCompact ? 16 : 24),
 
-                // Score display
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: (isDark ? AxiomColors.success : AxiomColors.successDark)
-                        .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                  // Score display
+                  Container(
+                    padding: EdgeInsets.all(isCompact ? 12 : 16),
+                    decoration: BoxDecoration(
+                      color: (isDark ? AxiomColors.success : AxiomColors.successDark)
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Score',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$score',
+                          style: (isCompact ? theme.textTheme.displaySmall : theme.textTheme.displayMedium)?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AxiomColors.success : AxiomColors.successDark,
+                          ),
+                        ),
+                        Text(
+                          'out of 100',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
+                  SizedBox(height: isCompact ? 12 : 16),
+
+                  // Stats row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Text(
-                        'Score',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.secondary,
-                        ),
+                      _CompletionStatItem(
+                        label: 'Hints Used',
+                        value: '$_hintsUsed',
+                        icon: Icons.lightbulb_outline,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$score',
-                        style: theme.textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AxiomColors.success : AxiomColors.successDark,
-                        ),
-                      ),
-                      Text(
-                        'out of 100',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.secondary,
-                        ),
+                      _CompletionStatItem(
+                        label: 'Streak',
+                        value: '$_streak',
+                        icon: Icons.local_fire_department,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
 
-                // Stats row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _CompletionStatItem(
-                      label: 'Hints Used',
-                      value: '$_hintsUsed',
-                      icon: Icons.lightbulb_outline,
-                    ),
-                    _CompletionStatItem(
-                      label: 'Streak',
-                      value: '$_streak',
-                      icon: Icons.local_fire_department,
+                  if (_hintsUsed > 0) ...[
+                    SizedBox(height: isCompact ? 8 : 12),
+                    Text(
+                      '-${_hintsUsed * 20} points for hints',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AxiomColors.pink,
+                      ),
                     ),
                   ],
-                ),
+                  SizedBox(height: isCompact ? 16 : 24),
 
-                if (_hintsUsed > 0) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    '-${_hintsUsed * 20} points for hints',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AxiomColors.pink,
+                  // Action buttons
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _shareScore(score),
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Copy Score'),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        Navigator.pushNamed(context, RouteNames.almanacArchive);
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text('View Archive'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Close'),
+                  ),
                 ],
-                const SizedBox(height: 24),
-
-                // Action buttons
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _shareScore(score),
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy Score'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop();
-                      Navigator.pushNamed(context, RouteNames.almanacArchive);
-                    },
-                    icon: const Icon(Icons.history, size: 18),
-                    label: const Text('View Archive'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Close'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -386,19 +390,26 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     );
   }
 
-  void _shareScore(int score) {
-    String emoji;
-    if (score >= 90) {
-      emoji = '🏆';
-    } else if (score >= 70) {
-      emoji = '⭐';
-    } else if (score >= 50) {
-      emoji = '👍';
-    } else {
-      emoji = '🎯';
-    }
+  String _getScoreEmojis(int score) {
+    if (score >= 90) return '🏆🌟✨';
+    if (score >= 70) return '🎉💡';
+    if (score >= 50) return '👏💭';
+    if (score >= 30) return '💪🧩';
+    return '🤔📖';
+  }
 
-    final shareText = '$emoji I just scored $score on today\'s Almanac.\nThink you can beat me? 🧠\n👉 https://axiompuzzles.web.app';
+  void _shareScore(int score) {
+    final emojis = _getScoreEmojis(score);
+    final streakText = _streak == 1 ? 'day' : 'days';
+
+    final shareText = '''
+$emojis Almanac $emojis
+
+Score: $score/100
+Streak: $_streak $streakText
+
+Play the daily logic puzzle at https://axiompuzzles.web.app
+'''.trim();
 
     Clipboard.setData(ClipboardData(text: shareText));
 
@@ -442,7 +453,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
-              Icon(Icons.image_search, size: 28),
+              Icon(Icons.lightbulb_outline, size: 28),
               SizedBox(width: 10),
               Text('About Almanac'),
             ],
@@ -453,7 +464,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Almanac is a daily puzzle game where you identify images from clues.',
+                  'Almanac is a daily logic puzzle where you solve riddles and clues.',
                   style: Theme.of(dialogContext).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),
@@ -465,7 +476,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('1. View the daily puzzle image and clue'),
+                const Text('1. Read the daily puzzle clue'),
                 const Text('2. Type your answer and submit'),
                 const Text('3. Use hints if you need help (-20 points each)'),
                 const SizedBox(height: 16),
@@ -558,7 +569,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.image_search),
+                Icon(Icons.lightbulb_outline),
                 SizedBox(width: 10),
                 Text('ALMANAC'),
               ],
@@ -608,7 +619,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           children: [
             RotationTransition(
               turns: _logoRotation,
-              child: const Icon(Icons.image_search, size: 100),
+              child: const Icon(Icons.lightbulb_outline, size: 100),
             ),
             const SizedBox(height: 24),
             Text(
@@ -705,54 +716,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
               ),
 
               const SizedBox(height: 20),
-
-              // Puzzle image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  color: Theme.of(context).cardTheme.color,
-                  child: Image.network(
-                    puzzle.imageUrl,
-                    fit: BoxFit.contain,
-                    cacheWidth: 800,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 250,
-                        color: Theme.of(context).cardTheme.color,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AxiomColors.cyan,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 250,
-                        color: Theme.of(context).cardTheme.color,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.broken_image, size: 48, color: AxiomColors.pink),
-                              const SizedBox(height: 8),
-                              Text('Failed to load image',
-                                  style: TextStyle(color: AxiomColors.pink)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
 
               // Description
               Card(

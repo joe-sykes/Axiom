@@ -23,6 +23,7 @@ class AxiomColors {
   static const Color cryptixAccent = Color(0xFF3498DB);
   static const Color doubletAccent = Colors.indigo;
   static const Color triverseAccent = Color(0xFF9B59B6);  // Purple
+  static const Color cryptogramAccent = Color(0xFFE74C3C);  // Red
 
   // Cryptix-specific colors
   static const Color accent = Color(0xFF3498DB);      // Light blue accent
