@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../../core/widgets/stats_bar.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
@@ -33,12 +32,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   int _hintsUsed = 0;
   List<bool> _hintsRevealed = [false, false, false];
   bool _helpDialogShown = false;
-
-  // Check if we should use the custom on-screen keyboard (only on small screens)
-  bool _useCustomKeyboard(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < 600;
-  }
 
   // Timer for scoring
   DateTime? _puzzleStartTime;
@@ -120,25 +113,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     _logoAnimationController.dispose();
     _scoreTimer?.cancel();
     super.dispose();
-  }
-
-  void _onKeyboardKey(String letter) {
-    _answerController.text = _answerController.text + letter;
-    _answerController.selection = TextSelection.collapsed(
-      offset: _answerController.text.length,
-    );
-  }
-
-  void _onKeyboardBackspace() {
-    if (_answerController.text.isNotEmpty) {
-      _answerController.text = _answerController.text.substring(
-        0,
-        _answerController.text.length - 1,
-      );
-      _answerController.selection = TextSelection.collapsed(
-        offset: _answerController.text.length,
-      );
-    }
   }
 
   void _startScoreTimer() {
@@ -545,6 +519,7 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home),
@@ -594,16 +569,6 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
         child: Column(
           children: [
             Expanded(child: _buildBody(gameState)),
-            // Custom keyboard - show when puzzle is ready and not yet solved
-            if (_useCustomKeyboard(context) &&
-                gameState.state == AlmanacPuzzleState.ready &&
-                !_isCorrect &&
-                !_hasSubmitted)
-              GameKeyboard(
-                onKeyPressed: _onKeyboardKey,
-                onBackspace: _onKeyboardBackspace,
-                onEnter: _submitAnswer,
-              ),
           ],
         ),
       ),
@@ -935,9 +900,7 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
             TextField(
               controller: _answerController,
               focusNode: _answerFocusNode,
-              readOnly: _useCustomKeyboard(context),
               showCursor: true,
-              keyboardType: _useCustomKeyboard(context) ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

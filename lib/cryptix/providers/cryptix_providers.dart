@@ -314,20 +314,20 @@ final cryptixGameProvider =
 // ============ App State ============
 
 class CryptixAppState {
-  final bool isFirstLaunch;
+  final bool hasSeenHelp;
   final bool initialized;
 
   const CryptixAppState({
-    this.isFirstLaunch = true,
+    this.hasSeenHelp = false,
     this.initialized = false,
   });
 
   CryptixAppState copyWith({
-    bool? isFirstLaunch,
+    bool? hasSeenHelp,
     bool? initialized,
   }) {
     return CryptixAppState(
-      isFirstLaunch: isFirstLaunch ?? this.isFirstLaunch,
+      hasSeenHelp: hasSeenHelp ?? this.hasSeenHelp,
       initialized: initialized ?? this.initialized,
     );
   }
@@ -341,16 +341,16 @@ class CryptixAppNotifier extends StateNotifier<CryptixAppState> {
   CryptixStorageService get _storage => _ref.read(cryptixStorageProvider);
 
   Future<void> init() async {
-    final isFirstLaunch = _storage.isFirstLaunch();
+    final hasSeenHelp = _storage.hasSeenHelp();
     state = CryptixAppState(
-      isFirstLaunch: isFirstLaunch,
+      hasSeenHelp: hasSeenHelp,
       initialized: true,
     );
   }
 
-  Future<void> completeFirstLaunch() async {
-    await _storage.setFirstLaunchComplete();
-    state = state.copyWith(isFirstLaunch: false);
+  Future<void> markHelpAsSeen() async {
+    await _storage.markHelpAsSeen();
+    state = state.copyWith(hasSeenHelp: true);
   }
 }
 

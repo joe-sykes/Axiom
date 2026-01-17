@@ -7,7 +7,6 @@ import '../../core/constants/route_names.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
 
@@ -278,36 +277,11 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
   final FocusNode _answerFocusNode = FocusNode();
   bool? _isCorrect;
 
-  // Check if we should use the custom on-screen keyboard (only on small screens)
-  bool _useCustomKeyboard(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < 600;
-  }
-
   @override
   void dispose() {
     _answerController.dispose();
     _answerFocusNode.dispose();
     super.dispose();
-  }
-
-  void _onKeyboardKey(String letter) {
-    _answerController.text = _answerController.text + letter;
-    _answerController.selection = TextSelection.collapsed(
-      offset: _answerController.text.length,
-    );
-  }
-
-  void _onKeyboardBackspace() {
-    if (_answerController.text.isNotEmpty) {
-      _answerController.text = _answerController.text.substring(
-        0,
-        _answerController.text.length - 1,
-      );
-      _answerController.selection = TextSelection.collapsed(
-        offset: _answerController.text.length,
-      );
-    }
   }
 
   void _submitAnswer() {
@@ -363,6 +337,7 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
     final isDark = themeMode == ThemeMode.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(_formatDate(widget.puzzle.date)),
         centerTitle: true,
@@ -407,13 +382,6 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
                 ),
               ),
             ),
-            // Custom keyboard - show when not yet answered
-            if (_useCustomKeyboard(context) && _isCorrect == null)
-              GameKeyboard(
-                onKeyPressed: _onKeyboardKey,
-                onBackspace: _onKeyboardBackspace,
-                onEnter: _submitAnswer,
-              ),
           ],
         ),
       ),
@@ -528,9 +496,7 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
             TextField(
               controller: _answerController,
               focusNode: _answerFocusNode,
-              readOnly: _useCustomKeyboard(context),
               showCursor: true,
-              keyboardType: _useCustomKeyboard(context) ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../providers/cryptogram_providers.dart';
 import '../widgets/completion_dialog.dart';
 
@@ -22,18 +21,38 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
   int _bestStreak = 0;
   int _totalSolved = 0;
   bool _dialogShown = false;
+  bool _helpDialogShown = false;
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _hiddenInputFocusNode = FocusNode();
+  final TextEditingController _hiddenInputController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadPuzzle();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPuzzle();
+      _checkAndShowHelp();
+    });
   }
 
   @override
   void dispose() {
     _focusNode.dispose();
+    _hiddenInputFocusNode.dispose();
+    _hiddenInputController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAndShowHelp() async {
+    if (_helpDialogShown) return;
+
+    final storage = ref.read(cryptogramStorageServiceProvider);
+    final hasSeenHelp = await storage.hasSeenHelp();
+    if (!hasSeenHelp && mounted) {
+      _helpDialogShown = true;
+      _showHelpDialog();
+      await storage.markHelpAsSeen();
+    }
   }
 
   Future<void> _loadPuzzle() async {
@@ -115,8 +134,22 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
         _selectedEncodedLetter = null;
       } else {
         _selectedEncodedLetter = upperLetter;
+        // Focus the hidden input to trigger mobile keyboard
+        _hiddenInputController.clear();
+        _hiddenInputFocusNode.requestFocus();
       }
     });
+  }
+
+  void _onHiddenInputChanged(String value) {
+    if (value.isNotEmpty && _selectedEncodedLetter != null) {
+      final letter = value[value.length - 1];
+      if (RegExp(r'[a-zA-Z]').hasMatch(letter)) {
+        _onKeyboardKey(letter);
+      }
+      // Clear the hidden input for next character
+      _hiddenInputController.clear();
+    }
   }
 
   void _onKeyboardKey(String key) {
@@ -280,7 +313,6 @@ Play the daily cryptogram at https://axiompuzzles.web.app
   Widget build(BuildContext context) {
     final gameState = ref.watch(cryptogramGameProvider);
     final screenHeight = MediaQuery.of(context).size.height;
-    final useCustomKeyboard = MediaQuery.of(context).size.width < 600;
 
     // Show completion dialog when puzzle is solved
     if (gameState.isComplete && !_dialogShown) {
@@ -290,6 +322,7 @@ Play the daily cryptogram at https://axiompuzzles.web.app
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -341,7 +374,30 @@ Play the daily cryptogram at https://axiompuzzles.web.app
           child: gameState.puzzle == null
               ? Center(child: CircularProgressIndicator(color: AxiomColors.cyan))
               : SafeArea(
-                  child: Column(
+                  child: Stack(
+                children: [
+                  // Hidden TextField to capture mobile keyboard input
+                  Positioned(
+                    left: -1000,
+                    child: SizedBox(
+                      width: 1,
+                      height: 1,
+                      child: TextField(
+                        controller: _hiddenInputController,
+                        focusNode: _hiddenInputFocusNode,
+                        onChanged: _onHiddenInputChanged,
+                        autofocus: false,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Column(
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
@@ -421,6 +477,9 @@ Play the daily cryptogram at https://axiompuzzles.web.app
                                     label: Text('Reveal Letter (-10 pts) • Used: ${gameState.hintsUsed}'),
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                // Available letters tracker
+                                _buildAvailableLetters(gameState),
                               ],
 
                               if (gameState.isComplete) ...[
@@ -434,14 +493,8 @@ Play the daily cryptogram at https://axiompuzzles.web.app
                     ),
                   ),
 
-                  // Keyboard
-                  if (useCustomKeyboard && !gameState.isComplete)
-                    GameKeyboard(
-                      onKeyPressed: _onKeyboardKey,
-                      onBackspace: _onKeyboardBackspace,
-                      onEnter: null,
-                      showEnter: false,
-                    ),
+                ],
+              ),
                 ],
               ),
             ),
@@ -451,27 +504,89 @@ Play the daily cryptogram at https://axiompuzzles.web.app
   }
 
   Widget _buildCryptogram(CryptogramGameState state) {
-    // Split quote into characters but preserve word boundaries for spacing
-    final characters = <Widget>[];
-    final quote = state.encodedQuote;
-    int wordIndex = 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tighter spacing on smaller screens
+    final runSpacing = screenWidth < 400 ? 8.0 : 12.0;
+    // Max characters per chunk before splitting (based on screen width)
+    final maxChunkSize = screenWidth < 400 ? 8 : 10;
 
-    for (int i = 0; i < quote.length; i++) {
-      final char = quote[i];
-      if (char == ' ') {
-        // Add space between words
-        characters.add(const SizedBox(width: 12));
-        wordIndex++;
+    final words = <Widget>[];
+    final quote = state.encodedQuote;
+    final wordStrings = quote.split(' ');
+
+    for (int wordIndex = 0; wordIndex < wordStrings.length; wordIndex++) {
+      final word = wordStrings[wordIndex];
+
+      // Split long words into chunks with continuation hyphens
+      if (word.length > maxChunkSize) {
+        final chunks = <List<String>>[];
+        for (int i = 0; i < word.length; i += maxChunkSize) {
+          final end = (i + maxChunkSize < word.length) ? i + maxChunkSize : word.length;
+          chunks.add(word.substring(i, end).split(''));
+        }
+
+        for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+          final chunk = chunks[chunkIndex];
+          final letterWidgets = <Widget>[];
+
+          for (int i = 0; i < chunk.length; i++) {
+            letterWidgets.add(_buildLetter(chunk[i], state, wordIndex));
+          }
+
+          // Add continuation hyphen at end of chunk (except last chunk)
+          if (chunkIndex < chunks.length - 1) {
+            letterWidgets.add(_buildContinuationHyphen());
+          }
+
+          words.add(Row(
+            mainAxisSize: MainAxisSize.min,
+            children: letterWidgets,
+          ));
+        }
       } else {
-        characters.add(_buildLetter(char, state, wordIndex));
+        // Short words stay together
+        final letterWidgets = <Widget>[];
+        for (int i = 0; i < word.length; i++) {
+          letterWidgets.add(_buildLetter(word[i], state, wordIndex));
+        }
+
+        words.add(Row(
+          mainAxisSize: MainAxisSize.min,
+          children: letterWidgets,
+        ));
       }
     }
 
     return Wrap(
-      spacing: 0,
-      runSpacing: 12,
+      spacing: 12, // Space between words
+      runSpacing: runSpacing,
       alignment: WrapAlignment.center,
-      children: characters,
+      children: words,
+    );
+  }
+
+  Widget _buildContinuationHyphen() {
+    return Container(
+      padding: const EdgeInsets.only(left: 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 32,
+            alignment: Alignment.bottomCenter,
+            child: Text(
+              '—', // Em dash to distinguish from actual hyphens
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AxiomColors.cyan,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 
@@ -483,13 +598,23 @@ Play the daily cryptogram at https://axiompuzzles.web.app
         : Colors.transparent;
 
     if (!isLetter) {
-      // Punctuation - just display it with word tint
+      // Punctuation - match letter height structure for alignment, no word tint
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        color: wordTint,
-        child: Text(
-          encodedChar,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 32,
+              alignment: Alignment.bottomCenter,
+              child: Text(
+                encodedChar,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const SizedBox(height: 12),
+          ],
         ),
       );
     }
@@ -685,12 +810,60 @@ Play the daily cryptogram at https://axiompuzzles.web.app
     );
   }
 
+  Widget _buildAvailableLetters(CryptogramGameState state) {
+    final theme = Theme.of(context);
+    final usedLetters = state.userMapping.values.map((e) => e.toUpperCase()).toSet();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    return Column(
+      children: [
+        Text(
+          'Available Letters',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          alignment: WrapAlignment.center,
+          children: alphabet.split('').map((letter) {
+            final isUsed = usedLetters.contains(letter);
+            return Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isUsed
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                letter,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isUsed
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                      : theme.colorScheme.primary,
+                  decoration: isUsed ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty) {
       case 'easy':
         return Colors.green;
       case 'medium':
-        return Colors.orange;
+        return Colors.orange.shade700;
       case 'hard':
         return Colors.red;
       default:
@@ -709,19 +882,36 @@ Play the daily cryptogram at https://axiompuzzles.web.app
             Text('How to Play'),
           ],
         ),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Decode the encrypted quote by substituting letters.'),
-              SizedBox(height: 16),
-              Text('1. Tap a letter to select it'),
-              Text('2. Type or tap the letter you think it represents'),
-              Text('3. Each letter in the cipher represents one letter'),
-              Text('4. Use hints if you get stuck (-10 points each)'),
-              SizedBox(height: 16),
-              Text('The quote and author will be revealed when you solve it!'),
+              const Text('Decode the encrypted quote by substituting letters.'),
+              const SizedBox(height: 16),
+              const Text('1. Tap a letter to select it'),
+              const Text('2. Type or tap the letter you think it represents'),
+              const Text('3. Each letter in the cipher represents one letter'),
+              const Text('4. Use hints if you get stuck (-10 points each)'),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '—',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AxiomColors.cyan,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('A cyan em dash indicates a word continues on the next line.'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('The quote and author will be revealed when you solve it!'),
             ],
           ),
         ),

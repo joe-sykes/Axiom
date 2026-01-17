@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
 
@@ -21,6 +20,8 @@ class CryptogramArchivePuzzleScreen extends ConsumerStatefulWidget {
 class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchivePuzzleScreen> {
   String? _selectedEncodedLetter;
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _hiddenInputFocusNode = FocusNode();
+  final TextEditingController _hiddenInputController = TextEditingController();
 
   // Local game state for archive puzzles
   late Map<String, String> _cipher;
@@ -48,6 +49,8 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   @override
   void dispose() {
     _focusNode.dispose();
+    _hiddenInputFocusNode.dispose();
+    _hiddenInputController.dispose();
     super.dispose();
   }
 
@@ -73,8 +76,22 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
         _selectedEncodedLetter = null;
       } else {
         _selectedEncodedLetter = upperLetter;
+        // Focus the hidden input to trigger mobile keyboard
+        _hiddenInputController.clear();
+        _hiddenInputFocusNode.requestFocus();
       }
     });
+  }
+
+  void _onHiddenInputChanged(String value) {
+    if (value.isNotEmpty && _selectedEncodedLetter != null) {
+      final letter = value[value.length - 1];
+      if (RegExp(r'[a-zA-Z]').hasMatch(letter)) {
+        _onKeyboardKey(letter);
+      }
+      // Clear the hidden input for next character
+      _hiddenInputController.clear();
+    }
   }
 
   void _onKeyboardKey(String key) {
@@ -236,9 +253,8 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
 
   @override
   Widget build(BuildContext context) {
-    final useCustomKeyboard = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -279,7 +295,30 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
           onTap: () => _focusNode.requestFocus(),
           behavior: HitTestBehavior.opaque,
           child: SafeArea(
-            child: Column(
+            child: Stack(
+              children: [
+                // Hidden TextField to capture mobile keyboard input
+                Positioned(
+                  left: -1000,
+                  child: SizedBox(
+                    width: 1,
+                    height: 1,
+                    child: TextField(
+                      controller: _hiddenInputController,
+                      focusNode: _hiddenInputFocusNode,
+                      onChanged: _onHiddenInputChanged,
+                      autofocus: false,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      keyboardType: TextInputType.text,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+                Column(
               children: [
                 Expanded(
                   child: SingleChildScrollView(
@@ -371,13 +410,8 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
                   ),
                 ),
 
-                if (useCustomKeyboard && !_isComplete)
-                  GameKeyboard(
-                    onKeyPressed: _onKeyboardKey,
-                    onBackspace: _onKeyboardBackspace,
-                    onEnter: null,
-                    showEnter: false,
-                  ),
+              ],
+            ),
               ],
             ),
           ),
@@ -387,24 +421,88 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   }
 
   Widget _buildCryptogram() {
-    final characters = <Widget>[];
-    int wordIndex = 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tighter spacing on smaller screens
+    final runSpacing = screenWidth < 400 ? 8.0 : 12.0;
+    // Max characters per chunk before splitting (based on screen width)
+    final maxChunkSize = screenWidth < 400 ? 8 : 10;
 
-    for (int i = 0; i < _encodedQuote.length; i++) {
-      final char = _encodedQuote[i];
-      if (char == ' ') {
-        characters.add(const SizedBox(width: 12));
-        wordIndex++;
+    final words = <Widget>[];
+    final wordStrings = _encodedQuote.split(' ');
+
+    for (int wordIndex = 0; wordIndex < wordStrings.length; wordIndex++) {
+      final word = wordStrings[wordIndex];
+
+      // Split long words into chunks with continuation hyphens
+      if (word.length > maxChunkSize) {
+        final chunks = <List<String>>[];
+        for (int i = 0; i < word.length; i += maxChunkSize) {
+          final end = (i + maxChunkSize < word.length) ? i + maxChunkSize : word.length;
+          chunks.add(word.substring(i, end).split(''));
+        }
+
+        for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+          final chunk = chunks[chunkIndex];
+          final letterWidgets = <Widget>[];
+
+          for (int i = 0; i < chunk.length; i++) {
+            letterWidgets.add(_buildLetter(chunk[i], wordIndex));
+          }
+
+          // Add continuation hyphen at end of chunk (except last chunk)
+          if (chunkIndex < chunks.length - 1) {
+            letterWidgets.add(_buildContinuationHyphen());
+          }
+
+          words.add(Row(
+            mainAxisSize: MainAxisSize.min,
+            children: letterWidgets,
+          ));
+        }
       } else {
-        characters.add(_buildLetter(char, wordIndex));
+        // Short words stay together
+        final letterWidgets = <Widget>[];
+        for (int i = 0; i < word.length; i++) {
+          letterWidgets.add(_buildLetter(word[i], wordIndex));
+        }
+
+        words.add(Row(
+          mainAxisSize: MainAxisSize.min,
+          children: letterWidgets,
+        ));
       }
     }
 
     return Wrap(
-      spacing: 0,
-      runSpacing: 12,
+      spacing: 12, // Space between words
+      runSpacing: runSpacing,
       alignment: WrapAlignment.center,
-      children: characters,
+      children: words,
+    );
+  }
+
+  Widget _buildContinuationHyphen() {
+    return Container(
+      padding: const EdgeInsets.only(left: 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 32,
+            alignment: Alignment.bottomCenter,
+            child: Text(
+              '—', // Em dash to distinguish from actual hyphens
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AxiomColors.cyan,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 
@@ -416,12 +514,23 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
         : Colors.transparent;
 
     if (!isLetter) {
+      // Punctuation - match letter height structure for alignment, no word tint
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        color: wordTint,
-        child: Text(
-          encodedChar,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 32,
+              alignment: Alignment.bottomCenter,
+              child: Text(
+                encodedChar,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const SizedBox(height: 12),
+          ],
         ),
       );
     }
@@ -534,7 +643,7 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
       case 'easy':
         return Colors.green;
       case 'medium':
-        return Colors.orange;
+        return Colors.orange.shade700;
       case 'hard':
         return Colors.red;
       default:

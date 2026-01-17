@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#252A34",
     "theme_color": "#252A34",
-    "description": "Challenge yourself with three unique daily puzzles: Almanac, Cryptix, and Doublet. New puzzles every day at midnight.",
+    "description": "Play five free daily puzzle games: Almanac (logic), Cryptix (cryptic crosswords), Cryptogram (decode quotes), Doublet (word ladders), and Triverse (trivia). New challenges every day!",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "categories": ["games", "entertainment", "puzzle"],

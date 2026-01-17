@@ -69,6 +69,8 @@ class AboutGameDialog extends StatelessWidget {
                           'valid English word from the Scrabble dictionary.',
                     ),
                     const SizedBox(height: 20),
+                    _buildExample(context),
+                    const SizedBox(height: 20),
                     _buildSection(
                       context,
                       icon: Icons.rule,
@@ -81,8 +83,6 @@ class AboutGameDialog extends StatelessWidget {
 
 Note: A green tick means the word is valid in the dictionary, but it may not necessarily be the correct answer for the puzzle.''',
                     ),
-                    const SizedBox(height: 20),
-                    _buildExample(context),
                     const SizedBox(height: 20),
                     _buildSection(
                       context,

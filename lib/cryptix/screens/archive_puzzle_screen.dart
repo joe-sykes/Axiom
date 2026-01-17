@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/core_providers.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptix_providers.dart';
 import '../widgets/clue_display.dart';
@@ -27,13 +26,6 @@ class ArchivePuzzleScreen extends ConsumerStatefulWidget {
 class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
   bool _solved = false;
   bool _showIncorrectFeedback = false;
-  final GlobalKey<CrosswordInputState> _crosswordKey = GlobalKey();
-
-  // Check if we should use the custom on-screen keyboard (only on small screens)
-  bool _useCustomKeyboard(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < 600;
-  }
 
   @override
   void initState() {
@@ -101,6 +93,7 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
     final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: GestureDetector(
           onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
@@ -201,14 +194,13 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
 
                           // Crossword input
                           CrosswordInput(
-                            key: _useCustomKeyboard(context) ? _crosswordKey : null,
                             length: widget.puzzle.length,
                             isLocked: _solved,
                             isCorrect: _solved,
                             correctAnswer: widget.puzzle.answer,
                             canRevealLetter: false,
                             onSubmit: _handleSubmit,
-                            useCustomKeyboard: _useCustomKeyboard(context),
+                            useCustomKeyboard: false,
                           ),
 
                           // Incorrect feedback
@@ -279,13 +271,6 @@ class _ArchivePuzzleScreenState extends ConsumerState<ArchivePuzzleScreen> {
                 ),
               ),
             ),
-            // Custom keyboard
-            if (_useCustomKeyboard(context) && !_solved)
-              GameKeyboard(
-                onKeyPressed: (letter) => _crosswordKey.currentState?.handleKeyboardLetter(letter),
-                onBackspace: () => _crosswordKey.currentState?.handleKeyboardBackspace(),
-                onEnter: () => _crosswordKey.currentState?.handleKeyboardEnter(),
-              ),
           ],
         ),
       ),

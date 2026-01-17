@@ -6,12 +6,12 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/widgets/app_footer.dart';
-import '../../core/widgets/game_keyboard.dart';
 import '../core/constants/ui_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../core/utils/scoring_utils.dart';
 import '../models/puzzle.dart';
 import '../providers/providers.dart';
+import '../widgets/about_dialog.dart';
 import '../widgets/doublet_app_bar.dart';
 import '../widgets/word_input_tile.dart';
 
@@ -33,6 +33,7 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
   final List<TextEditingController> _controllers = [];
   final List<FocusNode> _focusNodes = [];
   bool _isSubmitting = false;
+  bool _helpDialogShown = false;
   String? _errorMessage;
 
   int get _effectiveIndex =>
@@ -52,6 +53,17 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
     final dictionary = ref.read(dictionaryServiceProvider);
     if (!dictionary.isLoaded) {
       await dictionary.ensureLoaded();
+    }
+
+    // Check if we should show help (first-time user)
+    if (!_helpDialogShown && mounted) {
+      final storage = ref.read(storageServiceProvider);
+      final hasSeenHelp = storage.hasSeenHelp();
+      if (!hasSeenHelp) {
+        _helpDialogShown = true;
+        showAboutGameDialog(context);
+        await storage.markHelpAsSeen();
+      }
     }
 
     final puzzleAsync = await ref.read(puzzleProvider(_effectiveIndex).future);
@@ -91,90 +103,6 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
       node.dispose();
     }
     super.dispose();
-  }
-
-  // Check if we should use the custom on-screen keyboard (only on small screens)
-  bool _useCustomKeyboard(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    return screenWidth < 600;
-  }
-
-  int? get _focusedIndex {
-    for (int i = 0; i < _focusNodes.length; i++) {
-      if (_focusNodes[i].hasFocus) return i;
-    }
-    return null;
-  }
-
-  void _onKeyboardKey(String letter, Puzzle puzzle) {
-    final index = _focusedIndex;
-    if (index == null && _controllers.isNotEmpty) {
-      // No field focused, focus first empty one
-      for (int i = 0; i < _controllers.length; i++) {
-        if (_controllers[i].text.length < puzzle.wordLength) {
-          _focusNodes[i].requestFocus();
-          _handleKeyInput(i, letter, puzzle);
-          return;
-        }
-      }
-      return;
-    }
-    if (index == null) return;
-    _handleKeyInput(index, letter, puzzle);
-  }
-
-  void _handleKeyInput(int index, String letter, Puzzle puzzle) {
-    final controller = _controllers[index];
-    if (controller.text.length < puzzle.wordLength) {
-      controller.text = controller.text + letter.toUpperCase();
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-      _onWordChanged(index, controller.text, puzzle);
-    }
-  }
-
-  void _onKeyboardBackspace(Puzzle puzzle) {
-    int? index = _focusedIndex;
-
-    // If no field focused, find the last field with text
-    if (index == null && _controllers.isNotEmpty) {
-      for (int i = _controllers.length - 1; i >= 0; i--) {
-        if (_controllers[i].text.isNotEmpty) {
-          index = i;
-          _focusNodes[i].requestFocus();
-          break;
-        }
-      }
-      // If still null, focus first field
-      if (index == null) {
-        index = 0;
-        _focusNodes[0].requestFocus();
-      }
-    }
-
-    if (index == null) return;
-
-    final controller = _controllers[index];
-    if (controller.text.isNotEmpty) {
-      controller.text = controller.text.substring(0, controller.text.length - 1);
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-      _onWordChanged(index, controller.text, puzzle);
-    } else if (index > 0) {
-      // Move to previous field if current is empty
-      _focusNodes[index - 1].requestFocus();
-    }
-  }
-
-  void _onKeyboardEnter(Puzzle puzzle) {
-    final index = _focusedIndex;
-    if (index == null) return;
-
-    if (_controllers[index].text.length == puzzle.wordLength) {
-      if (index < _controllers.length - 1) {
-        _focusNodes[index + 1].requestFocus();
-      } else {
-        _submitSolution(puzzle);
-      }
-    }
   }
 
   void _onWordChanged(int index, String value, Puzzle puzzle) {
@@ -517,7 +445,7 @@ https://axiompuzzles.web.app
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         appBar: DoubletAppBar(
           leading: Semantics(
             button: true,
@@ -613,7 +541,7 @@ https://axiompuzzles.web.app
                             },
                             validator: validator,
                             stepNumber: index + 2,
-                            useCustomKeyboard: _useCustomKeyboard(context),
+                            useCustomKeyboard: false,
                           ),
                         );
                       }),
@@ -701,14 +629,6 @@ https://axiompuzzles.web.app
                 ),
               ),
 
-              // Custom keyboard
-              if (_useCustomKeyboard(context))
-                GameKeyboard(
-                  onKeyPressed: (letter) => _onKeyboardKey(letter, puzzle),
-                  onBackspace: () => _onKeyboardBackspace(puzzle),
-                  onEnter: () => _onKeyboardEnter(puzzle),
-                  enterLabel: 'NEXT',
-                ),
             ],
           ),
         ),

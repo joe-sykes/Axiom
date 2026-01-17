@@ -124,11 +124,16 @@ class _AnswerInputState extends State<AnswerInput> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(widget.length, (index) {
                 return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: widget.isLocked
                       ? null
                       : () {
                           setState(() {
                             _focusedIndex = index;
+                            // Clear existing letter on tap to allow overtyping
+                            if (_letters[index].isNotEmpty) {
+                              _letters[index] = '';
+                            }
                           });
                           _focusNodes[index].requestFocus();
                         },

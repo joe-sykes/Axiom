@@ -51,12 +51,6 @@ class CrosswordInputState extends State<CrosswordInput> {
   void initState() {
     super.initState();
     _initializeState();
-    // Auto-focus first box after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.isLocked && _focusNodes.isNotEmpty) {
-        _focusNodes[0].requestFocus();
-      }
-    });
   }
 
   void _initializeState() {

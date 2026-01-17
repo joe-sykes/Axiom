@@ -208,7 +208,7 @@ class _ArchiveItem extends StatelessWidget {
       case 'easy':
         return Colors.green;
       case 'medium':
-        return Colors.orange;
+        return Colors.orange.shade700;
       case 'hard':
         return Colors.red;
       default:

@@ -8,7 +8,7 @@ class CryptixStorageService {
 
   static const String _statsKey = 'cryptix_user_stats';
   static const String _progressPrefix = 'cryptix_puzzle_progress_';
-  static const String _firstLaunchKey = 'cryptix_first_launch';
+  static const String _hasSeenHelpKey = 'cryptix_has_seen_help';
   static const String _themeModeKey = 'cryptix_theme_mode';
 
   CryptixStorageService(this._prefs);
@@ -53,12 +53,12 @@ class CryptixStorageService {
     return result;
   }
 
-  bool isFirstLaunch() {
-    return _prefs.getBool(_firstLaunchKey) ?? true;
+  bool hasSeenHelp() {
+    return _prefs.getBool(_hasSeenHelpKey) ?? false;
   }
 
-  Future<void> setFirstLaunchComplete() async {
-    await _prefs.setBool(_firstLaunchKey, false);
+  Future<void> markHelpAsSeen() async {
+    await _prefs.setBool(_hasSeenHelpKey, true);
   }
 
   String? getThemeMode() {

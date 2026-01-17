@@ -12,6 +12,7 @@ class CryptogramStorageService {
   static const _userMappingKey = '${_keyPrefix}user_mapping';
   static const _completedTodayKey = '${_keyPrefix}completed_today';
   static const _todayScoreKey = '${_keyPrefix}today_score';
+  static const _hasSeenHelpKey = '${_keyPrefix}has_seen_help';
 
   late SharedPreferences _prefs;
   bool _initialized = false;
@@ -119,5 +120,17 @@ class CryptogramStorageService {
   String _getYesterdayString() {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     return '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Check if user has seen the help dialog
+  Future<bool> hasSeenHelp() async {
+    await init();
+    return _prefs.getBool(_hasSeenHelpKey) ?? false;
+  }
+
+  /// Mark the help dialog as seen
+  Future<void> markHelpAsSeen() async {
+    await init();
+    await _prefs.setBool(_hasSeenHelpKey, true);
   }
 }
