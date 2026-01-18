@@ -1,23 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:js_interop';
 
-@JS('gtag')
-external void _gtag(String command, String action, JSObject? params);
+import 'analytics_stub.dart' if (dart.library.html) 'analytics_web.dart' as analytics;
 
 /// Service for Google Analytics tracking
 class AnalyticsService {
   static void trackPageView(String pagePath, String pageTitle) {
     if (kIsWeb) {
-      try {
-        final params = {
-          'page_path': pagePath,
-          'page_title': pageTitle,
-        }.jsify() as JSObject;
-        _gtag('event', 'page_view', params);
-      } catch (e) {
-        debugPrint('Analytics error: $e');
-      }
+      analytics.trackPageView(pagePath, pageTitle);
     }
   }
 }
