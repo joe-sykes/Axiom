@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../providers/cryptix_providers.dart';
 import '../services/scoring_service.dart';
 import '../widgets/clue_display.dart';
@@ -26,6 +27,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<String>? _userLetters;
   bool _helpChecked = false;
   final GlobalKey<CrosswordInputState> _crosswordKey = GlobalKey();
+
+  /// Determines if we should show the custom on-screen keyboard.
+  /// Shows on mobile platforms (phones/tablets) where physical keyboards are rare.
+  bool get _useCustomKeyboard {
+    // On native mobile platforms, always use custom keyboard
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    // On web, use custom keyboard for touch devices (phones/tablets)
+    // We detect this by checking for mobile user agents via platform check
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
 
   @override
   void initState() {
@@ -64,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showCompletionDialog(CryptixGameState gameState) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => CompletionDialog(
         score: gameState.todaysProgress?.score ?? 0,
         stats: gameState.stats,
@@ -210,6 +225,17 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
             Expanded(
               child: _buildBody(context, gameState, theme, dateFormat),
             ),
+            // Show custom keyboard on mobile devices when puzzle is active
+            if (_useCustomKeyboard && gameState.state == CryptixPuzzleState.ready)
+              GameKeyboard(
+                onKeyPressed: (letter) =>
+                    _crosswordKey.currentState?.handleKeyboardLetter(letter),
+                onBackspace: () =>
+                    _crosswordKey.currentState?.handleKeyboardBackspace(),
+                onEnter: () =>
+                    _crosswordKey.currentState?.handleKeyboardEnter(),
+                showEnter: true,
+              ),
           ],
         ),
       ),
@@ -307,7 +333,7 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
 
                     // Crossword input - key forces rebuild when revealed letters change
                     CrosswordInput(
-                      key: ValueKey(gameState.revealedLetters.join(',')),
+                      key: _crosswordKey,
                       length: puzzle.length,
                       isLocked: isSolved,
                       isCorrect: isSolved,
@@ -321,7 +347,7 @@ Play the daily cryptic clue at https://axiompuzzles.web.app
                       showWrongLetters: _showWrongLetters,
                       onShowDefinition: isSolved ? null : () => _useHint(),
                       hintUsed: gameState.hintUsed,
-                      useCustomKeyboard: false,
+                      useCustomKeyboard: _useCustomKeyboard,
                     ),
 
                     // Incorrect feedback

@@ -11,6 +11,7 @@ import 'core/screens/privacy_screen.dart';
 // Almanac screens
 import 'almanac/screens/home_page.dart' as almanac;
 import 'almanac/screens/archive_page.dart' as almanac;
+import 'almanac/models/puzzle.dart';
 
 // Cryptix screens
 import 'cryptix/screens/home_screen.dart' as cryptix;
@@ -33,6 +34,8 @@ import 'triverse/screens/triverse_archive.dart';
 // Cryptogram screens
 import 'cryptogram/screens/home_screen.dart' as cryptogram;
 import 'cryptogram/screens/archive_screen.dart' as cryptogram;
+import 'cryptogram/screens/archive_puzzle_screen.dart' as cryptogram;
+import 'cryptogram/models/puzzle.dart' as cryptogram_models;
 
 /// Wraps a screen with a Title widget for SEO
 Widget _withTitle(String title, Widget child) {
@@ -72,6 +75,21 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
     case RouteNames.almanacArchive:
       return MaterialPageRoute(
         builder: (_) => _withTitle('Almanac Archive - Past Puzzles', const almanac.ArchivePage()),
+        settings: settings,
+      );
+    case RouteNames.almanacArchivePuzzle:
+      final args = settings.arguments as Map<String, dynamic>?;
+      final puzzle = args?['puzzle'] as AlmanacPuzzle?;
+      if (puzzle == null) {
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('No puzzle provided')),
+          ),
+          settings: settings,
+        );
+      }
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Almanac Puzzle', almanac.PuzzleDetailPage(puzzle: puzzle)),
         settings: settings,
       );
 
@@ -170,6 +188,21 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
     case RouteNames.cryptogramArchive:
       return MaterialPageRoute(
         builder: (_) => _withTitle('Cryptogram Archive - Past Quote Puzzles', const cryptogram.CryptogramArchiveScreen()),
+        settings: settings,
+      );
+    case RouteNames.cryptogramArchivePuzzle:
+      final args = settings.arguments as Map<String, dynamic>?;
+      final puzzle = args?['puzzle'] as cryptogram_models.CryptogramPuzzle?;
+      if (puzzle == null) {
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('No puzzle provided')),
+          ),
+          settings: settings,
+        );
+      }
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Cryptogram Puzzle', cryptogram.CryptogramArchivePuzzleScreen(puzzle: puzzle)),
         settings: settings,
       );
 

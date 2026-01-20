@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../core/constants/ui_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../core/utils/scoring_utils.dart';
@@ -35,6 +36,16 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
   bool _isSubmitting = false;
   bool _helpDialogShown = false;
   String? _errorMessage;
+  int _focusedControllerIndex = 0;
+
+  bool get _useCustomKeyboard {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
 
   int get _effectiveIndex =>
       widget.puzzleIndex ?? ref.read(todaysPuzzleIndexProvider);
@@ -53,6 +64,16 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
     final dictionary = ref.read(dictionaryServiceProvider);
     if (!dictionary.isLoaded) {
       await dictionary.ensureLoaded();
+    }
+
+    // Check if user has already completed today's puzzle (daily mode only)
+    if (widget.isDaily && mounted) {
+      final hasCompleted = ref.read(hasCompletedTodayProvider);
+      if (hasCompleted) {
+        // Redirect back to home - they've already completed today's puzzle
+        Navigator.of(context).pop();
+        return;
+      }
     }
 
     // Check if we should show help (first-time user)
@@ -89,7 +110,14 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
     // Create new
     for (int i = 0; i < count; i++) {
       _controllers.add(TextEditingController());
-      _focusNodes.add(FocusNode());
+      final focusNode = FocusNode();
+      // Track which controller is focused
+      focusNode.addListener(() {
+        if (focusNode.hasFocus) {
+          setState(() => _focusedControllerIndex = i);
+        }
+      });
+      _focusNodes.add(focusNode);
     }
     setState(() {});
   }
@@ -194,73 +222,76 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
 
     await showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) {
         final theme = Theme.of(dialogContext);
         final isDark = theme.brightness == Brightness.dark;
+        final screenHeight = MediaQuery.of(dialogContext).size.height;
+        final isCompact = screenHeight < 700;
 
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Result icon
-                  Icon(
-                    wasSuccessful ? Icons.celebration : Icons.sentiment_dissatisfied,
-                    size: 64,
-                    color: wasSuccessful ? Colors.amber : Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Message
-                  Text(
-                    message,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: wasSuccessful
-                          ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
-                          : Colors.orange,
+            constraints: BoxConstraints(maxWidth: 400, maxHeight: screenHeight * 0.85),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(isCompact ? 16 : 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Result icon
+                    Icon(
+                      wasSuccessful ? Icons.celebration : Icons.sentiment_dissatisfied,
+                      size: isCompact ? 48 : 64,
+                      color: wasSuccessful ? Colors.amber : Colors.grey,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
+                    SizedBox(height: isCompact ? 12 : 16),
 
-                  // Score display
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: (wasSuccessful ? Colors.green : Colors.orange)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                    // Message
+                    Text(
+                      message,
+                      style: (isCompact ? theme.textTheme.titleLarge : theme.textTheme.headlineMedium)?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: wasSuccessful
+                            ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+                            : Colors.orange,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Score',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.secondary,
+                    SizedBox(height: isCompact ? 16 : 24),
+
+                    // Score display
+                    Container(
+                      padding: EdgeInsets.all(isCompact ? 12 : 16),
+                      decoration: BoxDecoration(
+                        color: (wasSuccessful ? Colors.green : Colors.orange)
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Score',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$score',
-                          style: theme.textTheme.displayMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: wasSuccessful
-                                ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
-                                : Colors.orange,
+                          const SizedBox(height: 4),
+                          Text(
+                            '$score',
+                            style: (isCompact ? theme.textTheme.displaySmall : theme.textTheme.displayMedium)?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: wasSuccessful
+                                  ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+                                  : Colors.orange,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'out of 100',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.secondary,
+                          Text(
+                            'out of 100',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
                           ),
-                        ),
                         const SizedBox(height: 16),
                         const Divider(),
                         const SizedBox(height: 8),
@@ -361,7 +392,8 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
                       label: const Text('Back to Home'),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -541,7 +573,7 @@ https://axiompuzzles.web.app
                             },
                             validator: validator,
                             stepNumber: index + 2,
-                            useCustomKeyboard: false,
+                            useCustomKeyboard: _useCustomKeyboard,
                           ),
                         );
                       }),
@@ -628,7 +660,34 @@ https://axiompuzzles.web.app
                   ),
                 ),
               ),
-
+              // Show custom keyboard on mobile devices
+              if (_useCustomKeyboard && _controllers.isNotEmpty)
+                GameKeyboard(
+                  onKeyPressed: (letter) {
+                    if (_focusedControllerIndex < _controllers.length) {
+                      final controller = _controllers[_focusedControllerIndex];
+                      if (controller.text.length < puzzle.wordLength) {
+                        controller.text = controller.text + letter;
+                        controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: controller.text.length),
+                        );
+                      }
+                    }
+                  },
+                  onBackspace: () {
+                    if (_focusedControllerIndex < _controllers.length) {
+                      final controller = _controllers[_focusedControllerIndex];
+                      if (controller.text.isNotEmpty) {
+                        controller.text = controller.text.substring(0, controller.text.length - 1);
+                        controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: controller.text.length),
+                        );
+                      }
+                    }
+                  },
+                  onEnter: () => _submitSolution(puzzle),
+                  showEnter: true,
+                ),
             ],
           ),
         ),

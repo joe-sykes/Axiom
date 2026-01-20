@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/constants/route_names.dart';
 import '../../core/providers/core_providers.dart';
 import '../models/puzzle.dart';
 import '../models/puzzle_progress.dart';
 import '../providers/cryptix_providers.dart';
 import '../../core/widgets/app_footer.dart';
-import 'archive_puzzle_screen.dart';
 
 class ArchiveScreen extends ConsumerStatefulWidget {
   const ArchiveScreen({super.key});
@@ -51,13 +51,13 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
   }
 
   void _openPuzzle(CryptixPuzzle puzzle, bool isSolved) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ArchivePuzzleScreen(
-          puzzle: puzzle,
-          alreadySolved: isSolved,
-        ),
-      ),
+    Navigator.pushNamed(
+      context,
+      RouteNames.cryptixArchivePuzzle,
+      arguments: {
+        'puzzle': puzzle,
+        'alreadySolved': isSolved,
+      },
     ).then((_) => _loadData()); // Refresh on return
   }
 

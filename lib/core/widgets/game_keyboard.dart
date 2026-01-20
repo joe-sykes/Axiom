@@ -8,6 +8,10 @@ class GameKeyboard extends StatelessWidget {
   final VoidCallback? onEnter;
   final bool showEnter;
   final String enterLabel;
+  /// Letters that have been used/assigned (shown greyed out)
+  final Set<String> usedLetters;
+  /// Letters that have been revealed via hints (shown with strikethrough)
+  final Set<String> revealedLetters;
 
   const GameKeyboard({
     super.key,
@@ -16,6 +20,8 @@ class GameKeyboard extends StatelessWidget {
     this.onEnter,
     this.showEnter = true,
     this.enterLabel = 'ENTER',
+    this.usedLetters = const {},
+    this.revealedLetters = const {},
   });
 
   static const _numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -31,8 +37,8 @@ class GameKeyboard extends StatelessWidget {
 
     // Use compact layout for small screens (iPhone SE, etc.)
     final isCompact = screenHeight < 700;
-    final rowSpacing = isCompact ? 2.0 : 6.0;
-    final verticalPadding = isCompact ? 2.0 : 8.0;
+    final rowSpacing = isCompact ? 4.0 : 6.0;
+    final verticalPadding = isCompact ? 5.0 : 8.0;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4, vertical: verticalPadding),
@@ -71,6 +77,8 @@ class GameKeyboard extends StatelessWidget {
           .map((letter) => _KeyButton(
                 label: letter,
                 isCompact: isCompact,
+                isUsed: usedLetters.contains(letter.toUpperCase()),
+                isRevealed: revealedLetters.contains(letter.toUpperCase()),
                 onTap: () {
                   HapticFeedback.lightImpact();
                   onKeyPressed(letter);
@@ -99,6 +107,8 @@ class GameKeyboard extends StatelessWidget {
         ..._row3.map((letter) => _KeyButton(
               label: letter,
               isCompact: isCompact,
+              isUsed: usedLetters.contains(letter.toUpperCase()),
+              isRevealed: revealedLetters.contains(letter.toUpperCase()),
               onTap: () {
                 HapticFeedback.lightImpact();
                 onKeyPressed(letter);
@@ -123,6 +133,8 @@ class _KeyButton extends StatelessWidget {
   final IconData? icon;
   final bool isWide;
   final bool isCompact;
+  final bool isUsed;
+  final bool isRevealed;
   final VoidCallback? onTap;
 
   const _KeyButton({
@@ -130,6 +142,8 @@ class _KeyButton extends StatelessWidget {
     this.icon,
     this.isWide = false,
     this.isCompact = false,
+    this.isUsed = false,
+    this.isRevealed = false,
     this.onTap,
   });
 
@@ -138,17 +152,35 @@ class _KeyButton extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final minHeight = isCompact ? 32.0 : 48.0;
-    final minWidth = isWide ? (isCompact ? 40.0 : 52.0) : (isCompact ? 26.0 : 32.0);
-    final fontSize = isWide ? (isCompact ? 8.0 : 11.0) : (isCompact ? 12.0 : 15.0);
-    final iconSize = isCompact ? 16.0 : 20.0;
+    final minHeight = isCompact ? 40.0 : 48.0;
+    final minWidth = isWide ? (isCompact ? 46.0 : 52.0) : (isCompact ? 29.0 : 32.0);
+    final fontSize = isWide ? (isCompact ? 10.0 : 11.0) : (isCompact ? 13.0 : 15.0);
+    final iconSize = isCompact ? 18.0 : 20.0;
+
+    // Determine colors based on state
+    Color backgroundColor;
+    Color textColor;
+
+    if (isRevealed) {
+      // Revealed letters - subtle color to indicate they're "locked in"
+      backgroundColor = isDark ? Colors.green.shade900 : Colors.green.shade100;
+      textColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
+    } else if (isUsed) {
+      // Used letters - greyed out
+      backgroundColor = isDark ? Colors.grey.shade800 : Colors.grey.shade400;
+      textColor = isDark ? Colors.grey.shade600 : Colors.grey.shade500;
+    } else if (onTap == null) {
+      backgroundColor = isDark ? Colors.grey.shade800 : Colors.grey.shade400;
+      textColor = isDark ? Colors.grey.shade500 : Colors.grey.shade600;
+    } else {
+      backgroundColor = isDark ? Colors.grey.shade700 : Colors.grey.shade100;
+      textColor = isDark ? Colors.white : Colors.black87;
+    }
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 1.5 : 2),
       child: Material(
-        color: onTap == null
-            ? (isDark ? Colors.grey.shade800 : Colors.grey.shade400)
-            : (isDark ? Colors.grey.shade700 : Colors.grey.shade100),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           onTap: onTap,
@@ -158,7 +190,7 @@ class _KeyButton extends StatelessWidget {
               minWidth: minWidth,
               minHeight: minHeight,
             ),
-            padding: EdgeInsets.symmetric(horizontal: isWide ? (isCompact ? 6 : 8) : (isCompact ? 2 : 4)),
+            padding: EdgeInsets.symmetric(horizontal: isWide ? (isCompact ? 7 : 8) : (isCompact ? 3 : 4)),
             alignment: Alignment.center,
             child: icon != null
                 ? Icon(
@@ -171,9 +203,10 @@ class _KeyButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.bold,
-                      color: onTap == null
-                          ? (isDark ? Colors.grey.shade500 : Colors.grey.shade600)
-                          : (isDark ? Colors.white : Colors.black87),
+                      color: textColor,
+                      decoration: isRevealed ? TextDecoration.lineThrough : null,
+                      decorationColor: textColor,
+                      decorationThickness: 2,
                     ),
                   ),
           ),

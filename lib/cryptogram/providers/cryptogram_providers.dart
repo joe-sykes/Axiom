@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/puzzle.dart';
 import '../services/firestore_service.dart';
@@ -140,32 +141,49 @@ class CryptogramGameNotifier extends StateNotifier<CryptogramGameState> {
   void revealLetter() {
     if (state.isComplete || state.puzzle == null) return;
 
-    // Find a letter that hasn't been revealed or correctly guessed
+    // Get unique letters that actually appear in the encoded quote
+    final lettersInQuote = state.encodedQuote
+        .toUpperCase()
+        .split('')
+        .where((c) => RegExp(r'[A-Z]').hasMatch(c))
+        .toSet();
+
+    // Build reverse cipher for decoding
     final reverseCipher = <String, String>{};
     state.cipher.forEach((k, v) => reverseCipher[v] = k);
 
-    for (final entry in reverseCipher.entries) {
-      final encoded = entry.key;
-      final decoded = entry.value;
-
-      if (!state.revealedLetters.contains(encoded) &&
+    // Find letters that haven't been revealed or correctly guessed
+    final availableLetters = <String>[];
+    for (final encoded in lettersInQuote) {
+      final decoded = reverseCipher[encoded];
+      if (decoded != null &&
+          !state.revealedLetters.contains(encoded) &&
           state.userMapping[encoded] != decoded) {
-        final newMapping = Map<String, String>.from(state.userMapping);
-        newMapping[encoded] = decoded;
-
-        final newRevealed = Set<String>.from(state.revealedLetters)..add(encoded);
-
-        state = state.copyWith(
-          userMapping: newMapping,
-          revealedLetters: newRevealed,
-          hintsUsed: state.hintsUsed + 1,
-          score: (state.score - 10).clamp(0, 100),
-        );
-
-        _checkCompletion();
-        return;
+        availableLetters.add(encoded);
       }
     }
+
+    if (availableLetters.isEmpty) return;
+
+    // Use deterministic random based on puzzle date and hints used
+    final seed = state.puzzle!.date.hashCode + state.hintsUsed;
+    final random = Random(seed);
+    final encoded = availableLetters[random.nextInt(availableLetters.length)];
+    final decoded = reverseCipher[encoded]!;
+
+    final newMapping = Map<String, String>.from(state.userMapping);
+    newMapping[encoded] = decoded;
+
+    final newRevealed = Set<String>.from(state.revealedLetters)..add(encoded);
+
+    state = state.copyWith(
+      userMapping: newMapping,
+      revealedLetters: newRevealed,
+      hintsUsed: state.hintsUsed + 1,
+      score: (state.score - 10).clamp(0, 100),
+    );
+
+    _checkCompletion();
   }
 
   void _checkCompletion() {

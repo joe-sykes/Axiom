@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../providers/cryptogram_providers.dart';
 import '../widgets/completion_dialog.dart';
 
@@ -25,6 +27,15 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
   final FocusNode _focusNode = FocusNode();
   final FocusNode _hiddenInputFocusNode = FocusNode();
   final TextEditingController _hiddenInputController = TextEditingController();
+
+  bool get _useCustomKeyboard {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
 
   @override
   void initState() {
@@ -80,7 +91,7 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => CryptogramCompletionDialog(
         score: score,
         currentStreak: _streak,
@@ -134,9 +145,11 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
         _selectedEncodedLetter = null;
       } else {
         _selectedEncodedLetter = upperLetter;
-        // Focus the hidden input to trigger mobile keyboard
-        _hiddenInputController.clear();
-        _hiddenInputFocusNode.requestFocus();
+        // Focus the hidden input to trigger mobile keyboard (only if not using custom keyboard)
+        if (!_useCustomKeyboard) {
+          _hiddenInputController.clear();
+          _hiddenInputFocusNode.requestFocus();
+        }
       }
     });
   }
@@ -194,8 +207,39 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
   }
 
   void _onKeyboardBackspace() {
-    if (_selectedEncodedLetter != null) {
+    final state = ref.read(cryptogramGameProvider);
+
+    // If current letter has a mapping, remove it
+    if (_selectedEncodedLetter != null &&
+        state.userMapping.containsKey(_selectedEncodedLetter) &&
+        !state.revealedLetters.contains(_selectedEncodedLetter)) {
       ref.read(cryptogramGameProvider.notifier).removeLetter(_selectedEncodedLetter!);
+      return;
+    }
+
+    // Otherwise, find the previous letter with a mapping and remove it
+    final encoded = state.encodedQuote;
+    int startIndex = encoded.length;
+
+    if (_selectedEncodedLetter != null) {
+      for (int i = 0; i < encoded.length; i++) {
+        if (encoded[i].toUpperCase() == _selectedEncodedLetter) {
+          startIndex = i;
+          break;
+        }
+      }
+    }
+
+    // Search backwards for a letter with a mapping that isn't revealed
+    for (int i = startIndex - 1; i >= 0; i--) {
+      final char = encoded[i].toUpperCase();
+      if (char.contains(RegExp(r'[A-Z]')) &&
+          state.userMapping.containsKey(char) &&
+          !state.revealedLetters.contains(char)) {
+        ref.read(cryptogramGameProvider.notifier).removeLetter(char);
+        setState(() => _selectedEncodedLetter = char);
+        return;
+      }
     }
   }
 
@@ -493,6 +537,18 @@ Play the daily cryptogram at https://axiompuzzles.web.app
                     ),
                   ),
 
+                  // Show custom keyboard on mobile devices when puzzle is not complete
+                  if (_useCustomKeyboard && !gameState.isComplete)
+                    GameKeyboard(
+                      onKeyPressed: _onKeyboardKey,
+                      onBackspace: _onKeyboardBackspace,
+                      showEnter: false,
+                      usedLetters: gameState.userMapping.values.toSet(),
+                      revealedLetters: gameState.revealedLetters
+                          .map((encoded) => gameState.userMapping[encoded])
+                          .whereType<String>()
+                          .toSet(),
+                    ),
                 ],
               ),
                 ],
@@ -507,8 +563,11 @@ Play the daily cryptogram at https://axiompuzzles.web.app
     final screenWidth = MediaQuery.of(context).size.width;
     // Tighter spacing on smaller screens
     final runSpacing = screenWidth < 400 ? 8.0 : 12.0;
-    // Max characters per chunk before splitting (based on screen width)
-    final maxChunkSize = screenWidth < 400 ? 8 : 10;
+    // Calculate max characters per chunk based on actual screen width
+    // Each letter cell is 28px + 2px margin = 30px, plus some padding for container
+    final contentWidth = screenWidth - 32; // Account for screen padding
+    final letterWidth = 30.0;
+    final maxChunkSize = ((contentWidth - 20) / letterWidth).floor().clamp(8, 20);
 
     final words = <Widget>[];
     final quote = state.encodedQuote;

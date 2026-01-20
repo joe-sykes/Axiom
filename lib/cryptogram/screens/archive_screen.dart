@@ -6,7 +6,6 @@ import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
-import 'archive_puzzle_screen.dart';
 
 class CryptogramArchiveScreen extends ConsumerStatefulWidget {
   const CryptogramArchiveScreen({super.key});
@@ -189,10 +188,10 @@ class _CryptogramArchiveScreenState extends ConsumerState<CryptogramArchiveScree
   }
 
   void _openPuzzle(CryptogramPuzzle puzzle) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CryptogramArchivePuzzleScreen(puzzle: puzzle),
-      ),
+    Navigator.pushNamed(
+      context,
+      RouteNames.cryptogramArchivePuzzle,
+      arguments: {'puzzle': puzzle},
     );
   }
 }

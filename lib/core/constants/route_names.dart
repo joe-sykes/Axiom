@@ -7,6 +7,7 @@ class RouteNames {
   // Almanac routes
   static const almanac = '/almanac';
   static const almanacArchive = '/almanac/archive';
+  static const almanacArchivePuzzle = '/almanac/archive/puzzle';
   static const almanacPrivacy = '/almanac/privacy';
 
   // Cryptix routes
@@ -32,4 +33,5 @@ class RouteNames {
   // Cryptogram routes
   static const cryptogram = '/cryptogram';
   static const cryptogramArchive = '/cryptogram/archive';
+  static const cryptogramArchivePuzzle = '/cryptogram/archive/puzzle';
 }

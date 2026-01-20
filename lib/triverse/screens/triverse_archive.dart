@@ -29,15 +29,11 @@ class TriverseArchiveScreen extends ConsumerWidget {
         ),
         title: GestureDetector(
           onTap: () {
-            // Check if already played today
-            final completed = completedDataAsync.valueOrNull;
-            final alreadyPlayed = completed != null &&
-                (completed['completed'] as Set<String>).contains(_getTodayDate());
-            if (alreadyPlayed) {
-              // Already on archive, do nothing
-            } else {
-              Navigator.pop(context); // Go back to home
-            }
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteNames.triverse,
+              (route) => route.settings.name == RouteNames.home,
+            );
           },
           child: const MouseRegion(
             cursor: SystemMouseCursors.click,

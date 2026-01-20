@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
 
@@ -22,6 +25,15 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   final FocusNode _focusNode = FocusNode();
   final FocusNode _hiddenInputFocusNode = FocusNode();
   final TextEditingController _hiddenInputController = TextEditingController();
+
+  bool get _useCustomKeyboard {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
 
   // Local game state for archive puzzles
   late Map<String, String> _cipher;
@@ -76,9 +88,11 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
         _selectedEncodedLetter = null;
       } else {
         _selectedEncodedLetter = upperLetter;
-        // Focus the hidden input to trigger mobile keyboard
-        _hiddenInputController.clear();
-        _hiddenInputFocusNode.requestFocus();
+        // Focus the hidden input to trigger mobile keyboard (only if not using custom keyboard)
+        if (!_useCustomKeyboard) {
+          _hiddenInputController.clear();
+          _hiddenInputFocusNode.requestFocus();
+        }
       }
     });
   }
@@ -138,10 +152,42 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   }
 
   void _onKeyboardBackspace() {
-    if (_selectedEncodedLetter != null && !_isComplete) {
+    if (_isComplete) return;
+
+    // If current letter has a mapping, remove it
+    if (_selectedEncodedLetter != null &&
+        _userMapping.containsKey(_selectedEncodedLetter) &&
+        !_revealedLetters.contains(_selectedEncodedLetter)) {
       setState(() {
         _userMapping.remove(_selectedEncodedLetter);
       });
+      return;
+    }
+
+    // Otherwise, find the previous letter with a mapping and remove it
+    int startIndex = _encodedQuote.length;
+
+    if (_selectedEncodedLetter != null) {
+      for (int i = 0; i < _encodedQuote.length; i++) {
+        if (_encodedQuote[i].toUpperCase() == _selectedEncodedLetter) {
+          startIndex = i;
+          break;
+        }
+      }
+    }
+
+    // Search backwards for a letter with a mapping that isn't revealed
+    for (int i = startIndex - 1; i >= 0; i--) {
+      final char = _encodedQuote[i].toUpperCase();
+      if (char.contains(RegExp(r'[A-Z]')) &&
+          _userMapping.containsKey(char) &&
+          !_revealedLetters.contains(char)) {
+        setState(() {
+          _userMapping.remove(char);
+          _selectedEncodedLetter = char;
+        });
+        return;
+      }
     }
   }
 
@@ -162,23 +208,42 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   void _revealHint() {
     if (_isComplete) return;
 
+    // Get unique letters that actually appear in the encoded quote
+    final lettersInQuote = _encodedQuote
+        .toUpperCase()
+        .split('')
+        .where((c) => RegExp(r'[A-Z]').hasMatch(c))
+        .toSet();
+
+    // Build reverse cipher for decoding
     final reverseCipher = <String, String>{};
     _cipher.forEach((k, v) => reverseCipher[v] = k);
 
-    for (final entry in reverseCipher.entries) {
-      final encoded = entry.key;
-      final decoded = entry.value;
-
-      if (!_revealedLetters.contains(encoded) && _userMapping[encoded] != decoded) {
-        setState(() {
-          _userMapping[encoded] = decoded;
-          _revealedLetters.add(encoded);
-          _hintsUsed++;
-        });
-        _checkCompletion();
-        return;
+    // Find letters that haven't been revealed or correctly guessed
+    final availableLetters = <String>[];
+    for (final encoded in lettersInQuote) {
+      final decoded = reverseCipher[encoded];
+      if (decoded != null &&
+          !_revealedLetters.contains(encoded) &&
+          _userMapping[encoded] != decoded) {
+        availableLetters.add(encoded);
       }
     }
+
+    if (availableLetters.isEmpty) return;
+
+    // Use deterministic random based on puzzle date and hints used
+    final seed = widget.puzzle.date.hashCode + _hintsUsed;
+    final random = Random(seed);
+    final encoded = availableLetters[random.nextInt(availableLetters.length)];
+    final decoded = reverseCipher[encoded]!;
+
+    setState(() {
+      _userMapping[encoded] = decoded;
+      _revealedLetters.add(encoded);
+      _hintsUsed++;
+    });
+    _checkCompletion();
   }
 
   KeyEventResult _handleKeyEvent(KeyEvent event) {
@@ -376,6 +441,12 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
                             ),
                             const SizedBox(height: 16),
 
+                            // Available letters tracker
+                            if (!_isComplete)
+                              _buildAvailableLetters(),
+                            if (!_isComplete)
+                              const SizedBox(height: 16),
+
                             // Author (revealed on completion)
                             if (_isComplete)
                               Center(
@@ -410,6 +481,18 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
                   ),
                 ),
 
+                // Show custom keyboard on mobile devices when puzzle is not complete
+                if (_useCustomKeyboard && !_isComplete)
+                  GameKeyboard(
+                    onKeyPressed: _onKeyboardKey,
+                    onBackspace: _onKeyboardBackspace,
+                    showEnter: false,
+                    usedLetters: _userMapping.values.toSet(),
+                    revealedLetters: _revealedLetters
+                        .map((encoded) => _userMapping[encoded])
+                        .whereType<String>()
+                        .toSet(),
+                  ),
               ],
             ),
               ],
@@ -424,8 +507,11 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
     final screenWidth = MediaQuery.of(context).size.width;
     // Tighter spacing on smaller screens
     final runSpacing = screenWidth < 400 ? 8.0 : 12.0;
-    // Max characters per chunk before splitting (based on screen width)
-    final maxChunkSize = screenWidth < 400 ? 8 : 10;
+    // Calculate max characters per chunk based on actual screen width
+    // Each letter cell is 28px + 2px margin = 30px, plus some padding for container
+    final contentWidth = screenWidth - 32; // Account for screen padding
+    final letterWidth = 30.0;
+    final maxChunkSize = ((contentWidth - 20) / letterWidth).floor().clamp(8, 20);
 
     final words = <Widget>[];
     final wordStrings = _encodedQuote.split(' ');
@@ -635,6 +721,54 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAvailableLetters() {
+    final theme = Theme.of(context);
+    final usedLetters = _userMapping.values.map((e) => e.toUpperCase()).toSet();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    return Column(
+      children: [
+        Text(
+          'Available Letters',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          alignment: WrapAlignment.center,
+          children: alphabet.split('').map((letter) {
+            final isUsed = usedLetters.contains(letter);
+            return Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isUsed
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                letter,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isUsed
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                      : theme.colorScheme.primary,
+                  decoration: isUsed ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

@@ -57,55 +57,58 @@ Play the daily cryptogram at https://axiompuzzles.web.app
     }
   }
 
-  Widget _buildScoreIcons(int score) {
+  Widget _buildScoreIcons(int score, bool isCompact) {
+    final iconSize = isCompact ? 36.0 : 48.0;
+    final spacing = isCompact ? 6.0 : 8.0;
+
     if (score >= 90) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.emoji_events, size: 48, color: Colors.amber),
-          SizedBox(width: 8),
-          Icon(Icons.star, size: 48, color: Colors.amber),
-          SizedBox(width: 8),
-          Icon(Icons.auto_awesome, size: 48, color: Colors.amber),
+          Icon(Icons.emoji_events, size: iconSize, color: Colors.amber),
+          SizedBox(width: spacing),
+          Icon(Icons.star, size: iconSize, color: Colors.amber),
+          SizedBox(width: spacing),
+          Icon(Icons.auto_awesome, size: iconSize, color: Colors.amber),
         ],
       );
     }
     if (score >= 75) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.celebration, size: 48, color: Colors.purple),
-          SizedBox(width: 8),
-          Icon(Icons.celebration, size: 48, color: Colors.purple),
+          Icon(Icons.celebration, size: iconSize, color: Colors.purple),
+          SizedBox(width: spacing),
+          Icon(Icons.celebration, size: iconSize, color: Colors.purple),
         ],
       );
     }
     if (score >= 60) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.thumb_up, size: 48, color: Colors.blue),
-          SizedBox(width: 8),
-          Icon(Icons.thumb_up, size: 48, color: Colors.blue),
+          Icon(Icons.thumb_up, size: iconSize, color: Colors.blue),
+          SizedBox(width: spacing),
+          Icon(Icons.thumb_up, size: iconSize, color: Colors.blue),
         ],
       );
     }
     if (score >= 40) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.fitness_center, size: 48, color: Colors.orange),
-          SizedBox(width: 8),
-          Icon(Icons.sentiment_satisfied, size: 48, color: Colors.orange),
+          Icon(Icons.fitness_center, size: iconSize, color: Colors.orange),
+          SizedBox(width: spacing),
+          Icon(Icons.sentiment_satisfied, size: iconSize, color: Colors.orange),
         ],
       );
     }
-    return const Row(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.psychology, size: 48, color: Colors.grey),
-        SizedBox(width: 8),
-        Icon(Icons.menu_book, size: 48, color: Colors.grey),
+        Icon(Icons.psychology, size: iconSize, color: Colors.grey),
+        SizedBox(width: spacing),
+        Icon(Icons.menu_book, size: iconSize, color: Colors.grey),
       ],
     );
   }
@@ -115,37 +118,39 @@ Play the daily cryptogram at https://axiompuzzles.web.app
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final message = _getScoreMessage(score);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isCompact = screenHeight < 700;
 
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+        constraints: BoxConstraints(maxWidth: 400, maxHeight: screenHeight * 0.85),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(isCompact ? 16 : 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Success icons
-                _buildScoreIcons(score),
-                const SizedBox(height: 16),
+                _buildScoreIcons(score, isCompact),
+                SizedBox(height: isCompact ? 12 : 16),
 
                 // Congratulations message
                 Text(
                   message,
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: (isCompact ? theme.textTheme.titleLarge : theme.textTheme.headlineMedium)?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDark ? AxiomColors.successDark : AxiomColors.success,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: isCompact ? 16 : 24),
 
                 // Score display
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isCompact ? 12 : 16),
                   decoration: BoxDecoration(
                     color: (isDark ? AxiomColors.successDark : AxiomColors.success)
                         .withValues(alpha: 0.1),
@@ -162,7 +167,7 @@ Play the daily cryptogram at https://axiompuzzles.web.app
                       const SizedBox(height: 4),
                       Text(
                         '$score',
-                        style: theme.textTheme.displayMedium?.copyWith(
+                        style: (isCompact ? theme.textTheme.displaySmall : theme.textTheme.displayMedium)?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isDark ? AxiomColors.successDark : AxiomColors.success,
                         ),
@@ -176,30 +181,33 @@ Play the daily cryptogram at https://axiompuzzles.web.app
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: isCompact ? 12 : 16),
 
                 // Stats row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _StatItem(
-                      label: 'Current Streak',
+                      label: 'Streak',
                       value: '$currentStreak',
                       icon: Icons.local_fire_department,
+                      isCompact: isCompact,
                     ),
                     _StatItem(
-                      label: 'Best Streak',
+                      label: 'Best',
                       value: '$bestStreak',
                       icon: Icons.emoji_events,
+                      isCompact: isCompact,
                     ),
                     _StatItem(
-                      label: 'Total Solved',
+                      label: 'Solved',
                       value: '$totalSolved',
                       icon: Icons.check_circle,
+                      isCompact: isCompact,
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: isCompact ? 16 : 24),
 
                 // Action buttons
                 SizedBox(
@@ -243,11 +251,13 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final bool isCompact;
 
   const _StatItem({
     required this.label,
     required this.value,
     required this.icon,
+    this.isCompact = false,
   });
 
   @override
@@ -258,13 +268,13 @@ class _StatItem extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 24,
+          size: isCompact ? 20 : 24,
           color: theme.colorScheme.primary,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: isCompact ? 2 : 4),
         Text(
           value,
-          style: theme.textTheme.titleLarge?.copyWith(
+          style: (isCompact ? theme.textTheme.titleMedium : theme.textTheme.titleLarge)?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),

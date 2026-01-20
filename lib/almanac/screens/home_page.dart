@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../../core/widgets/stats_bar.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
@@ -32,6 +33,15 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   int _hintsUsed = 0;
   List<bool> _hintsRevealed = [false, false, false];
   bool _helpDialogShown = false;
+
+  bool get _useCustomKeyboard {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
 
   // Timer for scoring
   DateTime? _puzzleStartTime;
@@ -233,7 +243,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         insetPadding: EdgeInsets.symmetric(
@@ -569,6 +579,29 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
         child: Column(
           children: [
             Expanded(child: _buildBody(gameState)),
+            // Show custom keyboard on mobile devices when puzzle is ready and not solved
+            if (_useCustomKeyboard &&
+                gameState.state == AlmanacPuzzleState.ready &&
+                !_isCorrect)
+              GameKeyboard(
+                onKeyPressed: (letter) {
+                  _answerController.text = _answerController.text + letter;
+                  _answerController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _answerController.text.length),
+                  );
+                },
+                onBackspace: () {
+                  if (_answerController.text.isNotEmpty) {
+                    _answerController.text = _answerController.text
+                        .substring(0, _answerController.text.length - 1);
+                    _answerController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _answerController.text.length),
+                    );
+                  }
+                },
+                onEnter: _submitAnswer,
+                showEnter: true,
+              ),
           ],
         ),
       ),
@@ -901,6 +934,8 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
               controller: _answerController,
               focusNode: _answerFocusNode,
               showCursor: true,
+              readOnly: _useCustomKeyboard,
+              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

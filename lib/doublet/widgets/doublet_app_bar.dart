@@ -29,8 +29,6 @@ class DoubletAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasCompletedToday = ref.watch(hasCompletedTodayProvider);
-
     return AppBar(
       leading: leading ?? IconButton(
         icon: const Icon(Icons.home),
@@ -39,19 +37,15 @@ class DoubletAppBar extends ConsumerWidget implements PreferredSizeWidget {
       ),
       title: GestureDetector(
         onTap: () {
-          if (hasCompletedToday) {
-            Navigator.pushNamed(context, RouteNames.doubletArchive);
-          } else {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              RouteNames.doublet,
-              (route) => route.settings.name == RouteNames.home,
-            );
-          }
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            RouteNames.doublet,
+            (route) => route.settings.name == RouteNames.home,
+          );
         },
-        child: MouseRegion(
-          cursor: hasCompletedToday ? SystemMouseCursors.click : SystemMouseCursors.basic,
-          child: const Row(
+        child: const MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.linear_scale),

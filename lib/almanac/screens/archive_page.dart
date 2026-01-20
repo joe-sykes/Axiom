@@ -7,6 +7,7 @@ import '../../core/constants/route_names.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
+import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
 
@@ -48,12 +49,11 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
     }
   }
 
-  void _openPuzzleDetail(AlmanacPuzzle puzzle) async {
-    await Navigator.push(
+  void _openPuzzleDetail(AlmanacPuzzle puzzle) {
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) => PuzzleDetailPage(puzzle: puzzle),
-      ),
+      RouteNames.almanacArchivePuzzle,
+      arguments: {'puzzle': puzzle},
     );
   }
 
@@ -277,6 +277,15 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
   final FocusNode _answerFocusNode = FocusNode();
   bool? _isCorrect;
 
+  bool get _useCustomKeyboard {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android;
+    }
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android;
+  }
+
   @override
   void dispose() {
     _answerController.dispose();
@@ -382,6 +391,27 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
                 ),
               ),
             ),
+            // Show custom keyboard on mobile devices when puzzle is not solved
+            if (_useCustomKeyboard && _isCorrect != true)
+              GameKeyboard(
+                onKeyPressed: (letter) {
+                  _answerController.text = _answerController.text + letter;
+                  _answerController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _answerController.text.length),
+                  );
+                },
+                onBackspace: () {
+                  if (_answerController.text.isNotEmpty) {
+                    _answerController.text = _answerController.text
+                        .substring(0, _answerController.text.length - 1);
+                    _answerController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _answerController.text.length),
+                    );
+                  }
+                },
+                onEnter: _submitAnswer,
+                showEnter: true,
+              ),
           ],
         ),
       ),
@@ -497,6 +527,8 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
               controller: _answerController,
               focusNode: _answerFocusNode,
               showCursor: true,
+              readOnly: _useCustomKeyboard,
+              keyboardType: _useCustomKeyboard ? TextInputType.none : null,
               decoration: const InputDecoration(
                 labelText: 'Your Answer',
                 hintText: 'Type your guess here...',

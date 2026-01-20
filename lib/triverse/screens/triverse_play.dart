@@ -70,7 +70,7 @@ class _TriversePlayState extends ConsumerState<TriversePlay> {
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => TriverseResultsDialog(
         score: gameState.totalScore,
         correctCount: gameState.correctCount,
