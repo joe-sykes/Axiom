@@ -37,6 +37,9 @@ import 'cryptogram/screens/archive_screen.dart' as cryptogram;
 import 'cryptogram/screens/archive_puzzle_screen.dart' as cryptogram;
 import 'cryptogram/models/puzzle.dart' as cryptogram_models;
 
+// Sharing screens
+import 'sharing/screens/comparison_screen.dart';
+
 /// Wraps a screen with a Title widget for SEO
 Widget _withTitle(String title, Widget child) {
   return Title(
@@ -48,6 +51,15 @@ Widget _withTitle(String title, Widget child) {
 
 /// Route generator for the Axiom app
 Route<dynamic>? generateRoute(RouteSettings settings) {
+  // Handle /c/:data route for score comparison
+  if (settings.name != null && settings.name!.startsWith('${RouteNames.compare}/')) {
+    final encodedData = settings.name!.substring(RouteNames.compare.length + 1);
+    return MaterialPageRoute(
+      builder: (_) => _withTitle('Score Comparison - Axiom', ComparisonScreen(encodedData: encodedData)),
+      settings: settings,
+    );
+  }
+
   switch (settings.name) {
     // Axiom hub
     case RouteNames.home:

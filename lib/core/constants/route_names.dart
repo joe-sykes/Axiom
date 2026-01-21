@@ -34,4 +34,7 @@ class RouteNames {
   static const cryptogram = '/cryptogram';
   static const cryptogramArchive = '/cryptogram/archive';
   static const cryptogramArchivePuzzle = '/cryptogram/archive/puzzle';
+
+  // Sharing routes
+  static const compare = '/c';
 }

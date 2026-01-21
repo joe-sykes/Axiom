@@ -67,9 +67,17 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
   }
 
   Future<void> _loadPuzzle() async {
+    // Check if already completed today - don't reinitialize if so
+    final storage = ref.read(cryptogramStorageServiceProvider);
+    final completedToday = await storage.hasCompletedToday();
+
     final puzzle = await ref.read(cryptogramDailyPuzzleProvider.future);
-    if (puzzle != null) {
-      ref.read(cryptogramGameProvider.notifier).initPuzzle(puzzle);
+    if (puzzle != null && !completedToday) {
+      // Only initialize if not already completed today
+      final gameState = ref.read(cryptogramGameProvider);
+      if (gameState.puzzle == null || !gameState.isComplete) {
+        ref.read(cryptogramGameProvider.notifier).initPuzzle(puzzle);
+      }
     }
 
     final streak = await ref.read(cryptogramStreakProvider.future);
