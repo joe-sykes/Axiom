@@ -92,13 +92,13 @@ Note: A green tick means the word is valid in the dictionary, but it may not nec
 Base Score: 100 points
 
 Time Penalty:
-• First 3 minutes: No penalty
-• After 3 minutes: -5 points every 10 seconds
+• First 1.5 minutes: No penalty
+• After 1.5 minutes: -5 points every 10 seconds
 
 Accuracy Penalty:
 • -5 points per incorrect submission
 
-Minimum score: 0 points''',
+Scores are rounded to the nearest 5 points.''',
                     ),
                     const SizedBox(height: 20),
                     _buildSection(

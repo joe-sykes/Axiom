@@ -197,12 +197,7 @@ class PrivacyScreen extends ConsumerWidget {
                               'Since we don\'t collect personal data, there\'s nothing to delete or export. You can clear your local data at any time by clearing your browser\'s storage for this site.',
                         ),
 
-                        _Section(
-                          icon: Icons.mail,
-                          title: 'Contact',
-                          content:
-                              'Contact information coming soon! In the meantime, if you have questions about this privacy policy, keep solving puzzles and we\'ll figure it out.',
-                        ),
+                        _ContactSection(),
 
                         const SizedBox(height: 32),
 
@@ -317,6 +312,51 @@ class _Section extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactSection extends StatelessWidget {
+  const _ContactSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.mail, size: 24, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Contact',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'For bug reports, feature requests, or any other enquiries, contact us at:',
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            'fruitstonepuzzles@gmail.com',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

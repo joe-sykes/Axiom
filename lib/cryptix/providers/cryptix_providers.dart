@@ -202,11 +202,13 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
 
   Future<void> _handleCorrectGuess() async {
     final elapsed = DateTime.now().difference(state.startTime ?? DateTime.now());
+    final answerLength = state.todaysPuzzle!.answer.replaceAll(' ', '').length;
     final score = ScoringService.calculateScore(
       elapsed: elapsed,
       hintUsed: state.hintUsed,
       incorrectGuesses: state.incorrectGuesses,
       revealedLetters: state.revealedLetters.length,
+      totalLetters: answerLength,
     );
 
     final progress = PuzzleProgress(

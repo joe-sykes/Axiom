@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/route_names.dart';
 import '../models/comparison_data.dart';
 import '../models/daily_scores.dart';
 import '../providers/sharing_providers.dart';
@@ -98,7 +99,7 @@ class ComparisonScreen extends ConsumerWidget {
           // Play again button
           Center(
             child: TextButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pushReplacementNamed(RouteNames.home),
               icon: const Icon(Icons.home),
               label: const Text('Back to Home'),
             ),
@@ -218,7 +219,7 @@ class ComparisonScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pushReplacementNamed(RouteNames.home),
               icon: const Icon(Icons.home),
               label: const Text('Back to Home'),
             ),
@@ -268,7 +269,7 @@ class ComparisonScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pushReplacementNamed(RouteNames.home),
               icon: const Icon(Icons.play_arrow),
               label: const Text('Go Play!'),
             ),
@@ -300,7 +301,7 @@ class ComparisonScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pushReplacementNamed(RouteNames.home),
               icon: const Icon(Icons.home),
               label: const Text('Back to Home'),
             ),

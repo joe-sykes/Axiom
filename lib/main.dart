@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -11,6 +13,11 @@ import 'doublet/providers/providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Use path-based URLs on web (e.g., /c/data instead of /#/c/data)
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   // Initialize Firebase for all apps
   await FirebaseManager.initializeAll();

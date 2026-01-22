@@ -119,17 +119,18 @@ final cryptogramTodayScoreProvider2 = Provider<int?>((ref) {
 });
 
 /// Provider for today's Doublet score - watches game state for reactivity.
+/// Returns 0 if the user gave up (allows 5/5 completion with 0 points).
 final doubletTodayScoreProvider = Provider<int?>((ref) {
   final gameState = ref.watch(doublet.gameStateProvider);
-  // Check if there's an active completed game for today
-  if (gameState != null && gameState.isComplete && gameState.wasSuccessful) {
+  // Check if there's an active completed game for today (success or gave up)
+  if (gameState != null && gameState.isComplete) {
     return gameState.finalScore;
   }
   // Fallback: check storage for already completed today
   final storage = ref.watch(doublet.storageServiceProvider);
   final todayIndex = PuzzleDateUtils.getTodaysPuzzleIndex();
   final result = storage.getResultForPuzzle(todayIndex);
-  if (result != null && result.wasSuccessful) {
+  if (result != null) {
     return result.score;
   }
   return null;

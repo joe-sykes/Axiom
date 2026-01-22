@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/constants/route_names.dart';
 import 'core/providers/core_providers.dart';
 import 'core/services/analytics_service.dart';
 import 'core/theme/axiom_theme.dart';
@@ -33,7 +32,6 @@ class AxiomApp extends ConsumerWidget {
       theme: axiomLightTheme,
       darkTheme: axiomDarkTheme,
       themeMode: themeMode,
-      initialRoute: RouteNames.home,
       onGenerateRoute: generateRoute,
       scrollBehavior: NoScrollbarBehavior(),
       navigatorObservers: [AnalyticsNavigatorObserver()],

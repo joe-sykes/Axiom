@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:characters/characters.dart';
+
 import '../constants/emoji_lists.dart';
 import '../models/comparison_data.dart';
 import '../models/daily_scores.dart';
@@ -116,10 +118,25 @@ class ScoreCodec {
       final storedChecksum = reader.read(12);
 
       // Verify checksum
-      // Recalculate from data bytes (everything except last 12 bits)
+      // Recalculate from data bytes (everything before checksum bits)
       final checksumBitOffset = 2 + 12 + 4 + (gameCount * 5) + 20 + 8;
-      final checksumByteStart = (checksumBitOffset + 7) ~/ 8;
-      final dataBytes = bytes.sublist(0, checksumByteStart);
+
+      // The last data byte may contain some checksum bits that we need to mask out
+      final fullDataBytes = checksumBitOffset ~/ 8;
+      final extraBits = checksumBitOffset % 8;
+
+      List<int> dataBytes;
+      if (extraBits == 0) {
+        // Checksum starts on a byte boundary
+        dataBytes = bytes.sublist(0, fullDataBytes);
+      } else {
+        // Checksum starts mid-byte, need to mask out checksum bits from last byte
+        dataBytes = bytes.sublist(0, fullDataBytes + 1).toList();
+        // Clear the bits that belong to checksum (the low bits)
+        final mask = (0xFF << (8 - extraBits)) & 0xFF;
+        dataBytes[fullDataBytes] = dataBytes[fullDataBytes] & mask;
+      }
+
       final calculatedChecksum = _calculateChecksum(dataBytes, daysSinceRef);
 
       final isValid = storedChecksum == calculatedChecksum;
@@ -178,30 +195,15 @@ class ScoreCodec {
         return null;
       }
 
-      // Parse emojis back to 6-bit values
+      // Parse emojis back to 6-bit values using grapheme clusters
+      // This properly handles multi-codepoint emojis across platforms
       final values = <int>[];
-      final runes = encodedPart.runes.toList();
-      int i = 0;
-      while (i < runes.length) {
-        // Emojis can be 1-2 code units, try to match
-        String emoji;
-        if (i + 1 < runes.length) {
-          // Try 2-rune emoji first
-          emoji = String.fromCharCodes([runes[i], runes[i + 1]]);
-          var index = EmojiLists.getEncodingIndex(emoji);
-          if (index != -1) {
-            values.add(index);
-            i += 2;
-            continue;
-          }
-        }
-        // Try single rune
-        emoji = String.fromCharCode(runes[i]);
-        var index = EmojiLists.getEncodingIndex(emoji);
+      for (final grapheme in encodedPart.characters) {
+        final index = EmojiLists.getEncodingIndex(grapheme);
         if (index != -1) {
           values.add(index);
         }
-        i++;
+        // Skip unrecognized characters (whitespace, variation selectors, etc.)
       }
 
       if (values.isEmpty) {

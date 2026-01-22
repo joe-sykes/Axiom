@@ -68,6 +68,13 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
         settings: settings,
       );
 
+    // Bare /c route (no data) - redirect to home
+    case RouteNames.compare:
+      return MaterialPageRoute(
+        builder: (_) => _withTitle('Axiom - Daily Puzzle Games', const AxiomHomeScreen()),
+        settings: settings,
+      );
+
     // Unified privacy policy
     case RouteNames.privacy:
     case RouteNames.almanacPrivacy:

@@ -12,7 +12,7 @@ class AppConstants {
   static const int maxScore = 100;
   static const int penaltyPerIncorrect = 5;
   static const int timePenaltyPer10Sec = 5;
-  static const Duration gracePeriod = Duration(minutes: 3);
+  static const Duration gracePeriod = Duration(seconds: 90); // 1.5 minutes
 
   /// Cache settings
   static const Duration cacheExpiry = Duration(days: 30);

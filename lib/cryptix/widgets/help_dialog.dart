@@ -105,8 +105,10 @@ Time Penalty:
 
 Other Penalties:
 • Show definition hint: -15 points
-• Reveal a letter: -5 points per letter
-• Incorrect guess: -20 points''',
+• Reveal a letter: Proportional to word length (up to -80 points total)
+• Incorrect guess: -20 points
+
+Scores are rounded to the nearest 5 points.''',
                     ),
                     const SizedBox(height: 20),
                     _buildSection(

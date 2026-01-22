@@ -10,6 +10,7 @@ import '../services/triverse_storage_service.dart';
 // ============ Constants ============
 
 const double kMaxQuestionScore = 100 / 7; // ~14.29 points
+const int kGracePeriodMs = 2500; // 2.5 second grace period
 
 // Time limits by category
 int getTimeLimitForCategory(String category) {
@@ -101,7 +102,11 @@ class TriverseGameState {
   bool get hasError => errorMessage != null;
   bool get isComplete => phase == TriverseGamePhase.complete;
 
-  int get totalScore => answers.fold(0.0, (sum, a) => sum + a.score).round();
+  int get totalScore {
+    final raw = answers.fold(0.0, (sum, a) => sum + a.score).round();
+    // Round to nearest 5, clamped 0-100
+    return (((raw + 2) ~/ 5) * 5).clamp(0, 100);
+  }
   int get correctCount => answers.where((a) => a.correct).length;
   String get accuracyDisplay => '$correctCount/${puzzle?.questionCount ?? 7}';
 }
@@ -159,12 +164,21 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
     final selectedIndex = state.selectedAnswerIndex ?? -1;
     final correct = selectedIndex == question.correctIndex;
 
-    // Calculate score based on time (relative to category's time limit)
+    // Calculate score based on time with 2.5s grace period
     double score = 0;
     if (correct) {
-      final timeRemaining = timeLimit - timeMs;
-      final timeBonus = (timeRemaining / timeLimit).clamp(0.0, 1.0);
-      score = kMaxQuestionScore * (0.5 + 0.5 * timeBonus);
+      if (timeMs <= kGracePeriodMs) {
+        // Within grace period: full points
+        score = kMaxQuestionScore;
+      } else {
+        // After grace period: scale down based on remaining time
+        final effectiveTimeLimit = timeLimit - kGracePeriodMs;
+        final effectiveTimeUsed = timeMs - kGracePeriodMs;
+        final timeRemaining = effectiveTimeLimit - effectiveTimeUsed;
+        final timeBonus = (timeRemaining / effectiveTimeLimit).clamp(0.0, 1.0);
+        // 50% base + up to 50% time bonus
+        score = kMaxQuestionScore * (0.5 + 0.5 * timeBonus);
+      }
     }
 
     final answer = UserAnswer(

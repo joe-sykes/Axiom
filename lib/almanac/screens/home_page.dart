@@ -137,9 +137,12 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
       final elapsed = DateTime.now().difference(_puzzleStartTime!);
       if (elapsed.inSeconds > 180) {
         final secondsOverThreshold = elapsed.inSeconds - 180;
-        final timeDeduction = (secondsOverThreshold / 10).floor();
+        // -5 points per 20 seconds over grace period
+        final timeDeduction = (secondsOverThreshold ~/ 20) * 5;
         final hintDeduction = _hintsUsed * 20;
-        final newScore = (100 - timeDeduction - hintDeduction).clamp(0, 100);
+        final rawScore = (100 - timeDeduction - hintDeduction).clamp(0, 100);
+        // Round to nearest 5
+        final newScore = ((rawScore + 2) ~/ 5) * 5;
         if (newScore != _currentScore) {
           setState(() {
             _currentScore = newScore;
@@ -155,13 +158,18 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     final elapsed = DateTime.now().difference(_puzzleStartTime!);
     int score = 100;
 
+    // -5 points per 20 seconds after 3 minute grace period
     if (elapsed.inSeconds > 180) {
       final secondsOverThreshold = elapsed.inSeconds - 180;
-      score -= (secondsOverThreshold / 10).floor();
+      score -= (secondsOverThreshold ~/ 20) * 5;
     }
 
+    // -20 points per hint
     score -= _hintsUsed * 20;
-    return score.clamp(0, 100);
+
+    // Clamp and round to nearest 5
+    final clamped = score.clamp(0, 100);
+    return ((clamped + 2) ~/ 5) * 5;
   }
 
   void _submitAnswer() async {
@@ -473,8 +481,10 @@ Play the daily logic puzzle at https://axiompuzzles.web.app
                 ),
                 const SizedBox(height: 8),
                 const Text('Start with 100 points'),
-                const Text('After 3 minutes: -1 point every 10 seconds'),
+                const Text('After 3 minutes: -5 points every 20 seconds'),
                 const Text('Each hint used: -20 points'),
+                const Text('Wrong guess: -15 points'),
+                const Text('Scores rounded to nearest 5'),
               ],
             ),
           ),

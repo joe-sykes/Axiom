@@ -3,8 +3,38 @@ import 'package:axiom/sharing/services/score_codec.dart';
 import 'package:axiom/sharing/models/daily_scores.dart';
 import 'package:axiom/sharing/models/user_profile.dart';
 import 'package:axiom/sharing/constants/emoji_lists.dart';
+import 'package:axiom/sharing/providers/sharing_providers.dart';
 
 void main() {
+  test('Debug friend URL decode', () {
+    const url = 'https://axiompuzzles.web.app/c/C8Fo9FCsG4wzTEA';
+
+    print('=== URL DECODE DEBUG ===');
+    print('Input URL: $url');
+
+    // Use the same logic as decodeShareData
+    final result = decodeShareData(url);
+
+    print('');
+    print('=== RESULT ===');
+    print('Valid: ${result.isValid}');
+    print('Error: ${result.errorMessage}');
+    print('Player: ${result.playerName}');
+    print('Emoji index: ${result.emojiIndex}');
+    print('Date: ${result.date}');
+    print('Scores: ${result.scores}');
+    print('Total: ${result.totalScore}');
+
+    // Also try direct decode
+    const data = 'C8Fo9FCsG4wzTEA';
+    print('');
+    print('=== DIRECT DECODE ===');
+    final direct = ScoreCodec.decode(data);
+    print('Valid: ${direct.isValid}');
+    print('Error: ${direct.errorMessage}');
+    print('Scores: ${direct.scores}');
+  });
+
   test('Debug emoji encoding/decoding', () {
     final scores = DailyScores(
       date: DateTime.now().toUtc(),

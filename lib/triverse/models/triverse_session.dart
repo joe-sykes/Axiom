@@ -54,9 +54,11 @@ class TriverseSession {
     );
   }
 
-  /// Calculate total score (max 100)
+  /// Calculate total score (max 100, rounded to nearest 5)
   int get totalScore {
-    return answers.fold(0.0, (sum, a) => sum + a.score).round();
+    final raw = answers.fold(0.0, (sum, a) => sum + a.score).round();
+    // Round to nearest 5, clamped 0-100
+    return (((raw + 2) ~/ 5) * 5).clamp(0, 100);
   }
 
   /// Number of correct answers

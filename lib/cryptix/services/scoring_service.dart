@@ -4,7 +4,7 @@ class ScoringService {
   static const int deductionIntervalSeconds = 10;
   static const int timeDeduction = 5;
   static const int hintDeduction = 15;
-  static const int letterRevealDeduction = 5;
+  static const int letterRevealMaxDeduction = 80; // Proportional to word length
   static const int incorrectGuessDeduction = 20;
   static const int minimumScore = 0;
 
@@ -13,8 +13,9 @@ class ScoringService {
     required bool hintUsed,
     required int incorrectGuesses,
     int revealedLetters = 0,
+    int totalLetters = 1,
   }) {
-    int score = baseScore;
+    double score = baseScore.toDouble();
 
     // Time deductions after grace period
     final totalSeconds = elapsed.inSeconds;
@@ -29,13 +30,22 @@ class ScoringService {
       score -= hintDeduction;
     }
 
-    // Letter reveal deductions
-    score -= revealedLetters * letterRevealDeduction;
+    // Letter reveal deductions - proportional to word length (max 80 points)
+    if (totalLetters > 0 && revealedLetters > 0) {
+      final letterPenalty = (revealedLetters / totalLetters) * letterRevealMaxDeduction;
+      score -= letterPenalty;
+    }
 
     // Incorrect guess deductions
     score -= incorrectGuesses * incorrectGuessDeduction;
 
-    return score.clamp(minimumScore, baseScore);
+    // Clamp and round to nearest 5
+    return _roundToNearest5(score.clamp(minimumScore.toDouble(), baseScore.toDouble()).toInt());
+  }
+
+  /// Round score to nearest 5 points
+  static int _roundToNearest5(int score) {
+    return ((score + 2) ~/ 5) * 5;
   }
 
   static String getScoreEmojis(int score) {

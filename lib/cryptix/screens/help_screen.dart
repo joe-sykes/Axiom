@@ -177,7 +177,7 @@ class HelpScreen extends ConsumerWidget {
                         _ScoreItem(
                           icon: Icons.visibility,
                           label: 'Reveal a letter',
-                          value: '-5 points per letter',
+                          value: 'Up to -80 points (proportional)',
                           isNegative: true,
                         ),
                         _ScoreItem(

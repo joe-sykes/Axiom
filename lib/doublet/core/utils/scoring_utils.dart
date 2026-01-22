@@ -11,7 +11,7 @@ class ScoringUtils {
   }) {
     int score = AppConstants.maxScore;
 
-    // Time penalty: After 3 minutes, -5 points per 10 seconds
+    // Time penalty: After 1.5 minutes, -5 points per 10 seconds
     if (timeTaken > AppConstants.gracePeriod) {
       final overtime = timeTaken - AppConstants.gracePeriod;
       final penalty10SecBlocks = overtime.inSeconds ~/ 10;
@@ -21,8 +21,14 @@ class ScoringUtils {
     // Accuracy penalty: -5 per incorrect submission
     score -= incorrectSubmissions * AppConstants.penaltyPerIncorrect;
 
-    // Floor at 0
-    return score.clamp(0, AppConstants.maxScore);
+    // Clamp to 0-100 and round to nearest 5
+    final clamped = score.clamp(0, AppConstants.maxScore);
+    return _roundToNearest5(clamped);
+  }
+
+  /// Round score to nearest 5 points
+  static int _roundToNearest5(int score) {
+    return ((score + 2) ~/ 5) * 5;
   }
 
   /// Get breakdown of score calculation (for display)
@@ -40,8 +46,9 @@ class ScoringUtils {
 
     final accuracyPenalty =
         incorrectSubmissions * AppConstants.penaltyPerIncorrect;
-    final finalScore = (AppConstants.maxScore - timePenalty - accuracyPenalty)
+    final rawScore = (AppConstants.maxScore - timePenalty - accuracyPenalty)
         .clamp(0, AppConstants.maxScore);
+    final finalScore = _roundToNearest5(rawScore);
 
     return ScoreBreakdown(
       baseScore: AppConstants.maxScore,

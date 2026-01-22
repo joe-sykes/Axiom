@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -174,11 +176,20 @@ class ShareOptionsPanel extends ConsumerWidget {
       return;
     }
 
+    const taglines = [
+      'Decode my score if you dare',
+      'Can you crack the code?',
+      'Think you can beat this?',
+      'Your move',
+      'Decipher this',
+    ];
+    final tagline = taglines[Random().nextInt(taglines.length)];
+
     final message = '''
 $emojiString
 
-I completed all Axiom puzzles today!
-Challenge me at axiompuzzles.web.app
+$tagline
+https://axiompuzzles.web.app
 ''';
 
     await _shareContent(context, message, 'Share your Axiom score');

@@ -45,26 +45,28 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
 
     return AlertDialog(
       title: const Text('Create Your Profile'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Choose a name and emoji to identify yourself when sharing scores.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Choose an emoji and 4-letter name for sharing scores.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 24),
-            // Emoji picker button
-            Center(
-              child: InkWell(
+          ),
+          const SizedBox(height: 16),
+          // Emoji + Name input row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Emoji picker button
+              InkWell(
                 onTap: _selectEmoji,
-                borderRadius: BorderRadius.circular(50),
+                borderRadius: BorderRadius.circular(30),
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
                     shape: BoxShape.circle,
@@ -76,77 +78,72 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
                   child: Center(
                     child: Text(
                       EmojiLists.getTagEmoji(_selectedEmojiIndex),
-                      style: const TextStyle(fontSize: 40),
+                      style: const TextStyle(fontSize: 28),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: _selectEmoji,
-                child: const Text('Tap to change emoji'),
+              const SizedBox(width: 12),
+              // Name input
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  maxLength: 4,
+                  textCapitalization: TextCapitalization.characters,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 4,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
+                    _UpperCaseTextFormatter(),
+                  ],
+                  decoration: InputDecoration(
+                    hintText: 'ALEX',
+                    counterText: '',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: const OutlineInputBorder(),
+                    errorText: _hasInteracted && !_isValid
+                        ? '4 letters required'
+                        : null,
+                  ),
+                  onChanged: (_) {
+                    setState(() {
+                      _hasInteracted = true;
+                    });
+                  },
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Preview
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 16),
-            // Name input
-            TextField(
-              controller: _nameController,
-              maxLength: 4,
-              textCapitalization: TextCapitalization.characters,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z]')),
-                _UpperCaseTextFormatter(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Preview: ',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  '${EmojiLists.getTagEmoji(_selectedEmojiIndex)}${_nameController.text.toUpperCase().padRight(4, '_')}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-              decoration: InputDecoration(
-                labelText: 'NAME (4 letters)',
-                hintText: 'ALEX',
-                counterText: '',
-                border: const OutlineInputBorder(),
-                errorText: _hasInteracted && !_isValid
-                    ? 'Enter exactly 4 letters'
-                    : null,
-              ),
-              onChanged: (_) {
-                setState(() {
-                  _hasInteracted = true;
-                });
-              },
             ),
-            const SizedBox(height: 16),
-            // Preview
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Preview',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${EmojiLists.getTagEmoji(_selectedEmojiIndex)}${_nameController.text.toUpperCase().padRight(4, '_')}',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         TextButton(

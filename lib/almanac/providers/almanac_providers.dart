@@ -49,6 +49,7 @@ class AlmanacGameState {
   final List<bool> hintsRevealed;
   final int score;
   final DateTime? startTime;
+  final int incorrectGuesses;
 
   const AlmanacGameState({
     this.todaysPuzzle,
@@ -59,6 +60,7 @@ class AlmanacGameState {
     this.hintsRevealed = const [false, false, false],
     this.score = 100,
     this.startTime,
+    this.incorrectGuesses = 0,
   });
 
   AlmanacGameState copyWith({
@@ -70,6 +72,7 @@ class AlmanacGameState {
     List<bool>? hintsRevealed,
     int? score,
     DateTime? startTime,
+    int? incorrectGuesses,
   }) {
     return AlmanacGameState(
       todaysPuzzle: todaysPuzzle ?? this.todaysPuzzle,
@@ -80,6 +83,7 @@ class AlmanacGameState {
       hintsRevealed: hintsRevealed ?? this.hintsRevealed,
       score: score ?? this.score,
       startTime: startTime ?? this.startTime,
+      incorrectGuesses: incorrectGuesses ?? this.incorrectGuesses,
     );
   }
 }
@@ -114,6 +118,14 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     }
   }
 
+  // Scoring constants
+  static const int _baseScore = 100;
+  static const int _hintPenalty = 20;
+  static const int _incorrectGuessPenalty = 15;
+  static const int _gracePeriodSeconds = 180; // 3 minutes
+  static const int _timePenaltyInterval = 20; // seconds
+  static const int _timePenaltyPoints = 5;
+
   void revealHint(int index) {
     if (index < 0 || index >= 3) return;
     if (state.hintsRevealed[index]) return;
@@ -121,13 +133,9 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     final newRevealed = List<bool>.from(state.hintsRevealed);
     newRevealed[index] = true;
 
-    // Score penalty for using hints
-    final newScore = state.score - 10;
-
     state = state.copyWith(
       hintsRevealed: newRevealed,
       hintsUsed: state.hintsUsed + 1,
-      score: newScore.clamp(0, 100),
     );
   }
 
@@ -135,11 +143,47 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     if (state.todaysPuzzle == null) return false;
 
     final isCorrect = state.todaysPuzzle!.checkAnswer(guess);
-    state = state.copyWith(
-      isCorrect: isCorrect,
-      state: isCorrect ? AlmanacPuzzleState.solved : state.state,
-    );
+
+    if (isCorrect) {
+      // Calculate final score when solved
+      final finalScore = _calculateFinalScore();
+      state = state.copyWith(
+        isCorrect: isCorrect,
+        state: AlmanacPuzzleState.solved,
+        score: finalScore,
+      );
+    } else {
+      // Track incorrect guess
+      state = state.copyWith(
+        isCorrect: isCorrect,
+        incorrectGuesses: state.incorrectGuesses + 1,
+      );
+    }
     return isCorrect;
+  }
+
+  int _calculateFinalScore() {
+    double score = _baseScore.toDouble();
+
+    // Hint penalty: -20 per hint
+    score -= state.hintsUsed * _hintPenalty;
+
+    // Incorrect guess penalty: -15 per wrong answer
+    score -= state.incorrectGuesses * _incorrectGuessPenalty;
+
+    // Time penalty: -5 per 20 seconds after 3 minute grace period
+    if (state.startTime != null) {
+      final elapsed = DateTime.now().difference(state.startTime!);
+      if (elapsed.inSeconds > _gracePeriodSeconds) {
+        final overtime = elapsed.inSeconds - _gracePeriodSeconds;
+        final intervals = overtime ~/ _timePenaltyInterval;
+        score -= intervals * _timePenaltyPoints;
+      }
+    }
+
+    // Clamp to 0-100 and round to nearest 5
+    final clamped = score.clamp(0, 100).toInt();
+    return ((clamped + 2) ~/ 5) * 5;
   }
 
   void resetGame() {

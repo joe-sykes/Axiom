@@ -99,9 +99,11 @@ Max score: 100 points
 
 Each question is worth up to ~14 points.
 
-Faster correct answers earn more points.
-Slower correct answers earn partial credit.
-Wrong answers or timeouts earn 0 points.''',
+• First 2.5 seconds: Full points for correct answer
+• After 2.5 seconds: Points decrease over time
+• Wrong answers or timeouts earn 0 points
+
+Scores are rounded to the nearest 5 points.''',
                     ),
                     const SizedBox(height: 20),
                     _buildSection(
