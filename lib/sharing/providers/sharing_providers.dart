@@ -205,7 +205,7 @@ final shareDataProvider = Provider<String?>((ref) {
 final shareUrlProvider = Provider<String?>((ref) {
   final data = ref.watch(shareDataProvider);
   if (data == null) return null;
-  return 'https://axiompuzzles.web.app/c/$data';
+  return 'https://axiom-puzzles.com/c/$data';
 });
 
 /// Share emoji string - only available when all games complete and profile set.
@@ -224,7 +224,7 @@ ComparisonData decodeShareData(String input) {
   String? data;
 
   // Check if it's a URL
-  if (input.contains('axiompuzzles.web.app/c/')) {
+  if (input.contains('axiom-puzzles.com/c/')) {
     final uri = Uri.tryParse(input);
     if (uri != null) {
       final path = uri.path;

@@ -151,7 +151,7 @@ $emojis Cryptix $emojis
 Score: $score/100
 Streak: ${stats.currentStreak} day${stats.currentStreak == 1 ? '' : 's'}
 
-Play the daily cryptic clue at https://axiompuzzles.web.app
+Play the daily cryptic clue at https://axiom-puzzles.com
 ''';
 
     await Clipboard.setData(ClipboardData(text: message));

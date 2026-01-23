@@ -102,7 +102,7 @@ class _CompareInputDialogState extends ConsumerState<CompareInputDialog> {
 
     // Extract the encoded data to pass to the comparison screen
     String encodedData;
-    if (input.contains('axiompuzzles.web.app/c/')) {
+    if (input.contains('axiom-puzzles.com/c/')) {
       final uri = Uri.tryParse(input);
       encodedData = uri?.path.substring(3) ?? input;
     } else if (input.contains(' ')) {

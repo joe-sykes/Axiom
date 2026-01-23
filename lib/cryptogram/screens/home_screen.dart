@@ -347,7 +347,7 @@ $emojis Cryptogram $emojis
 Score: $score/100
 Streak: $_streak $streakText
 
-Play the daily cryptogram at https://axiompuzzles.web.app
+Play the daily cryptogram at https://axiom-puzzles.com
 '''.trim();
 
     Clipboard.setData(ClipboardData(text: shareText));

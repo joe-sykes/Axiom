@@ -439,7 +439,7 @@ $message
 
 $scoreBar $score/100
 
-https://axiompuzzles.web.app
+https://axiom-puzzles.com
 ''';
 
     Clipboard.setData(ClipboardData(text: text));

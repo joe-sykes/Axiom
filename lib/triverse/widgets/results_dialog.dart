@@ -41,7 +41,7 @@ ${streak > 1 ? '\u{1F525} $streak day streak!' : ''}
 
 $taunt
 
-\u{1F3AE} https://axiompuzzles.web.app/triverse
+\u{1F3AE} https://axiom-puzzles.com/triverse
 ''';
   }
 

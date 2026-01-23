@@ -189,7 +189,7 @@ class ShareOptionsPanel extends ConsumerWidget {
 $emojiString
 
 $tagline
-https://axiompuzzles.web.app
+https://axiom-puzzles.com
 ''';
 
     await _shareContent(context, message, 'Share your Axiom score');

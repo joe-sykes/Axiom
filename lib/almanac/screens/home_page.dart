@@ -403,7 +403,7 @@ $emojis Almanac $emojis
 Score: $score/100
 Streak: $_streak $streakText
 
-Play the daily logic puzzle at https://axiompuzzles.web.app
+Play the daily logic puzzle at https://axiom-puzzles.com
 '''.trim();
 
     Clipboard.setData(ClipboardData(text: shareText));

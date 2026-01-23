@@ -60,7 +60,7 @@ $emojis Triverse $emojis
 Score: $score/100
 Streak: $streak day${streak == 1 ? '' : 's'}
 
-Play the daily trivia at https://axiompuzzles.web.app
+Play the daily trivia at https://axiom-puzzles.com
 ''';
 
     Clipboard.setData(ClipboardData(text: message));
