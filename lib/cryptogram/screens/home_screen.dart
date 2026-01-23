@@ -116,6 +116,7 @@ class _CryptogramHomeScreenState extends ConsumerState<CryptogramHomeScreen> {
     ref.invalidate(cryptogramStreakProvider);
     ref.invalidate(cryptogramBestStreakProvider);
     ref.invalidate(cryptogramTotalSolvedProvider);
+    ref.invalidate(cryptogramTodayScoreProvider);
 
     final streak = await ref.read(cryptogramStreakProvider.future);
     final bestStreak = await ref.read(cryptogramBestStreakProvider.future);

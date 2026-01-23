@@ -13,6 +13,7 @@ class CryptogramStorageService {
   static const _completedTodayKey = '${_keyPrefix}completed_today';
   static const _todayScoreKey = '${_keyPrefix}today_score';
   static const _hasSeenHelpKey = '${_keyPrefix}has_seen_help';
+  static const _archiveCompletedKey = '${_keyPrefix}archive_completed';
 
   late SharedPreferences _prefs;
   bool _initialized = false;
@@ -132,5 +133,36 @@ class CryptogramStorageService {
   Future<void> markHelpAsSeen() async {
     await init();
     await _prefs.setBool(_hasSeenHelpKey, true);
+  }
+
+  // ============ Archive Puzzles ============
+
+  /// Get list of completed archive puzzle dates
+  Future<Set<String>> getCompletedArchivePuzzles() async {
+    await init();
+    final List<String> completed = _prefs.getStringList(_archiveCompletedKey) ?? [];
+    return completed.toSet();
+  }
+
+  /// Mark an archive puzzle as completed (does NOT affect streak)
+  Future<void> markArchivePuzzleCompleted(String date) async {
+    await init();
+    final completed = await getCompletedArchivePuzzles();
+    completed.add(date);
+    await _prefs.setStringList(_archiveCompletedKey, completed.toList());
+  }
+
+  /// Check if an archive puzzle is completed
+  Future<bool> isArchivePuzzleCompleted(String date) async {
+    final completed = await getCompletedArchivePuzzles();
+    return completed.contains(date);
+  }
+
+  /// Check if any puzzle (daily or archive) is completed for a date
+  Future<bool> isAnyPuzzleCompleted(String date) async {
+    await init();
+    final lastPlayed = _prefs.getString(_lastPlayedDateKey);
+    if (lastPlayed == date) return true;
+    return await isArchivePuzzleCompleted(date);
   }
 }

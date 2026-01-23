@@ -51,16 +51,52 @@ Widget _withTitle(String title, Widget child) {
 
 /// Route generator for the Axiom app
 Route<dynamic>? generateRoute(RouteSettings settings) {
+  // Strip query parameters from route name for matching
+  String routeName = settings.name ?? RouteNames.home;
+
+  // Use Uri to properly parse the route
+  try {
+    final uri = Uri.parse(routeName);
+    routeName = uri.path;
+  } catch (_) {
+    // If parsing fails, try manual stripping
+    if (routeName.contains('?')) {
+      routeName = routeName.split('?').first;
+    }
+  }
+
+  // Clean up any malformed characters
+  routeName = routeName.replaceAll('>', '').replaceAll('<', '');
+
+  // Normalize slashes
+  while (routeName.contains('//')) {
+    routeName = routeName.replaceAll('//', '/');
+  }
+
+  // Handle empty route or root as home
+  if (routeName.isEmpty || routeName == '/' || routeName == '/>/' || routeName == '/>') {
+    routeName = RouteNames.home;
+  }
+
+  // MIGRATION FIX: If original URL starts with /? (query params on root), route to home
+  final originalRoute = settings.name ?? '';
+  if (originalRoute.startsWith('/?') || originalRoute.contains('?migrate=')) {
+    return MaterialPageRoute(
+      builder: (_) => _withTitle('Axiom - Daily Puzzle Games', const AxiomHomeScreen()),
+      settings: settings,
+    );
+  }
+
   // Handle /c/:data route for score comparison
-  if (settings.name != null && settings.name!.startsWith('${RouteNames.compare}/')) {
-    final encodedData = settings.name!.substring(RouteNames.compare.length + 1);
+  if (routeName.startsWith('${RouteNames.compare}/')) {
+    final encodedData = routeName.substring(RouteNames.compare.length + 1);
     return MaterialPageRoute(
       builder: (_) => _withTitle('Score Comparison - Axiom', ComparisonScreen(encodedData: encodedData)),
       settings: settings,
     );
   }
 
-  switch (settings.name) {
+  switch (routeName) {
     // Axiom hub
     case RouteNames.home:
       return MaterialPageRoute(
@@ -226,10 +262,43 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
       );
 
     default:
+      // Handle migration URLs or any URL with query params that should go to home
+      final originalName = settings.name ?? '';
+      if (originalName.startsWith('/?') || originalName == '/' || originalName.isEmpty) {
+        return MaterialPageRoute(
+          builder: (_) => _withTitle('Axiom - Daily Puzzle Games', const AxiomHomeScreen()),
+          settings: settings,
+        );
+      }
       return MaterialPageRoute(
         builder: (_) => Scaffold(
           body: Center(
-            child: Text('Route not found: ${settings.name}'),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Route Debug Info:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  Text('settings.name: ${settings.name}'),
+                  const SizedBox(height: 8),
+                  Text('routeName (processed): $routeName'),
+                  const SizedBox(height: 8),
+                  Text('originalName: $originalName'),
+                  const SizedBox(height: 8),
+                  Text('startsWith /?): ${originalName.startsWith('/?')}'),
+                  const SizedBox(height: 8),
+                  Text('contains ?migrate=: ${originalName.contains('?migrate=')}'),
+                  const SizedBox(height: 24),
+                  Builder(
+                    builder: (ctx) => ElevatedButton(
+                      onPressed: () => Navigator.pushReplacementNamed(ctx, '/'),
+                      child: const Text('Go Home'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         settings: settings,

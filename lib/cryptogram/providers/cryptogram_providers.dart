@@ -22,7 +22,9 @@ final cryptogramStreakProvider = FutureProvider<int>((ref) async {
 
 final cryptogramTotalSolvedProvider = FutureProvider<int>((ref) async {
   final storage = ref.read(cryptogramStorageServiceProvider);
-  return storage.getTotalSolved();
+  final dailySolved = await storage.getTotalSolved();
+  final archiveCompleted = await storage.getCompletedArchivePuzzles();
+  return dailySolved + archiveCompleted.length;
 });
 
 final cryptogramBestStreakProvider = FutureProvider<int>((ref) async {

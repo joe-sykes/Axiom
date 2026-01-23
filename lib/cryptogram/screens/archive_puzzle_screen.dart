@@ -10,6 +10,7 @@ import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
+import '../services/storage_service.dart';
 
 class CryptogramArchivePuzzleScreen extends ConsumerStatefulWidget {
   final CryptogramPuzzle puzzle;
@@ -36,17 +37,34 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
   }
 
   // Local game state for archive puzzles
+  final CryptogramStorageService _storageService = CryptogramStorageService();
   late Map<String, String> _cipher;
   late String _encodedQuote;
   Map<String, String> _userMapping = {};
   Set<String> _revealedLetters = {};
   int _hintsUsed = 0;
   bool _isComplete = false;
+  bool _alreadySolved = false;
 
   @override
   void initState() {
     super.initState();
     _initPuzzle();
+    _checkIfAlreadySolved();
+  }
+
+  Future<void> _checkIfAlreadySolved() async {
+    final solved = await _storageService.isAnyPuzzleCompleted(widget.puzzle.date);
+    if (mounted && solved) {
+      setState(() {
+        _alreadySolved = true;
+        _isComplete = true;
+        // Show the solution
+        _userMapping = Map.fromEntries(
+          _cipher.entries.map((e) => MapEntry(e.key, e.value)),
+        );
+      });
+    }
   }
 
   void _initPuzzle() {
@@ -191,7 +209,9 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
     }
   }
 
-  void _checkCompletion() {
+  void _checkCompletion() async {
+    if (_alreadySolved) return; // Don't check if already solved before
+
     final decoded = _encodedQuote.split('').map((char) {
       final upper = char.toUpperCase();
       if (_userMapping.containsKey(upper)) {
@@ -201,6 +221,10 @@ class _CryptogramArchivePuzzleScreenState extends ConsumerState<CryptogramArchiv
     }).join('');
 
     if (decoded.toUpperCase() == widget.puzzle.quote.toUpperCase()) {
+      // Save to archive storage (does NOT affect streak)
+      await _storageService.markArchivePuzzleCompleted(widget.puzzle.date);
+      // Refresh completed count so homepage updates
+      ref.invalidate(cryptogramTotalSolvedProvider);
       setState(() => _isComplete = true);
     }
   }

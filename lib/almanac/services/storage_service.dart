@@ -6,6 +6,7 @@ class StorageService {
   static const String _completedPuzzlesKey = 'completed_puzzles';
   static const String _puzzleScoresKey = 'puzzle_scores';
   static const String _hasSeenHelpKey = 'almanac_has_seen_help';
+  static const String _archiveCompletedKey = 'almanac_archive_completed';
 
   SharedPreferences? _prefs;
 
@@ -110,5 +111,35 @@ class StorageService {
   Future<void> markHelpAsSeen() async {
     final p = await prefs;
     await p.setBool(_hasSeenHelpKey, true);
+  }
+
+  // ============ Archive Puzzles (separate from daily/streak) ============
+
+  /// Get list of completed archive puzzle dates
+  Future<Set<String>> getCompletedArchivePuzzles() async {
+    final p = await prefs;
+    final List<String> completed = p.getStringList(_archiveCompletedKey) ?? [];
+    return completed.toSet();
+  }
+
+  /// Mark an archive puzzle as completed (does NOT affect streak)
+  Future<void> markArchivePuzzleCompleted(String date) async {
+    final p = await prefs;
+    final completed = await getCompletedArchivePuzzles();
+    completed.add(date);
+    await p.setStringList(_archiveCompletedKey, completed.toList());
+  }
+
+  /// Check if an archive puzzle is completed
+  Future<bool> isArchivePuzzleCompleted(String date) async {
+    final completed = await getCompletedArchivePuzzles();
+    return completed.contains(date);
+  }
+
+  /// Check if any puzzle (daily or archive) is completed
+  Future<bool> isAnyPuzzleCompleted(String date) async {
+    final daily = await isPuzzleCompleted(date);
+    final archive = await isArchivePuzzleCompleted(date);
+    return daily || archive;
   }
 }

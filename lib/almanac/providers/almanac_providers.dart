@@ -209,11 +209,14 @@ final almanacStreakProvider = FutureProvider<int>((ref) async {
   return storage.calculateStreak();
 });
 
-/// Almanac total completed puzzles count
+/// Almanac total completed puzzles count (daily + archive)
 final almanacCompletedCountProvider = FutureProvider<int>((ref) async {
   final storage = ref.watch(almanacStorageServiceProvider);
-  final completed = await storage.getCompletedPuzzles();
-  return completed.length;
+  final dailyCompleted = await storage.getCompletedPuzzles();
+  final archiveCompleted = await storage.getCompletedArchivePuzzles();
+  // Merge both sets to avoid double-counting if same date in both
+  final allCompleted = {...dailyCompleted, ...archiveCompleted};
+  return allCompleted.length;
 });
 
 // ============ Initialization ============

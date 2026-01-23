@@ -14,9 +14,11 @@ class DoubletArchiveScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final releasedIndices = PuzzleDateUtils.getReleasedPuzzleIndices();
+    final allReleasedIndices = PuzzleDateUtils.getReleasedPuzzleIndices();
     final storage = ref.watch(storageServiceProvider);
     final todayIndex = ref.watch(todaysPuzzleIndexProvider);
+    // Filter out today's puzzle - archive should only show past puzzles
+    final releasedIndices = allReleasedIndices.where((i) => i != todayIndex).toList();
 
     return Scaffold(
       appBar: const DoubletAppBar(showBackButton: true),
@@ -49,20 +51,17 @@ class DoubletArchiveScreen extends ConsumerWidget {
                           final releaseDate =
                               PuzzleDateUtils.getFirstReleaseDateForPuzzle(puzzleIndex);
                           final puzzleNumber = puzzleIndex + 1;
-                          final isToday = puzzleIndex == todayIndex;
 
                           // Check if played
                           final result = storage.getResultForPuzzle(puzzleIndex);
                           final wasPlayed = result != null;
                           final wasSuccessful = result?.wasSuccessful ?? false;
 
-                          final statusLabel = isToday
-                              ? 'Today\'s puzzle'
-                              : wasSuccessful
-                                  ? 'Completed successfully'
-                                  : wasPlayed
-                                      ? 'Attempted'
-                                      : 'Not played';
+                          final statusLabel = wasSuccessful
+                              ? 'Completed successfully'
+                              : wasPlayed
+                                  ? 'Attempted'
+                                  : 'Not played';
 
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -71,42 +70,32 @@ class DoubletArchiveScreen extends ConsumerWidget {
                               label: 'Puzzle $puzzleNumber, $statusLabel${wasPlayed ? ', Score ${result.score} out of 100' : ''}',
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: isToday
-                                      ? Theme.of(context).colorScheme.primary
-                                      : wasSuccessful
-                                          ? Colors.green
-                                          : wasPlayed
-                                              ? Colors.orange
-                                              : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  child: isToday
-                                      ? Icon(
-                                          Icons.today,
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                          semanticLabel: 'Today',
-                                        )
+                                  backgroundColor: wasSuccessful
+                                      ? Colors.green
                                       : wasPlayed
-                                          ? Icon(
-                                              wasSuccessful ? Icons.check : Icons.close,
-                                              color: Colors.white,
-                                              semanticLabel: wasSuccessful ? 'Completed' : 'Failed',
-                                            )
-                                          : Text(
-                                              '$puzzleNumber',
-                                              style: TextStyle(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ),
+                                          ? Colors.orange
+                                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  child: wasPlayed
+                                      ? Icon(
+                                          wasSuccessful ? Icons.check : Icons.close,
+                                          color: Colors.white,
+                                          semanticLabel: wasSuccessful ? 'Completed' : 'Failed',
+                                        )
+                                      : Text(
+                                          '$puzzleNumber',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
                                 ),
                                 title: Text(
                                   'Puzzle #$puzzleNumber',
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Text(
-                                  isToday
-                                      ? 'Today'
-                                      : DateFormat('MMMM d, yyyy').format(releaseDate),
+                                  DateFormat('MMMM d, yyyy').format(releaseDate),
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -133,15 +122,14 @@ class DoubletArchiveScreen extends ConsumerWidget {
                                   ],
                                 ),
                                 onTap: () {
-                                  if (isToday) {
-                                    Navigator.pushNamed(context, RouteNames.doubletPlay);
-                                  } else {
-                                    Navigator.pushNamed(
-                                      context,
-                                      RouteNames.doubletPlay,
-                                      arguments: {'puzzleIndex': puzzleIndex},
-                                    );
-                                  }
+                                  Navigator.pushNamed(
+                                    context,
+                                    RouteNames.doubletPlay,
+                                    arguments: {
+                                      'puzzleIndex': puzzleIndex,
+                                      'isDaily': false,
+                                    },
+                                  );
                                 },
                               ),
                             ),

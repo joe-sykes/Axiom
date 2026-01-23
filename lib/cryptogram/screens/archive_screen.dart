@@ -6,6 +6,7 @@ import '../../core/constants/route_names.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
+import '../services/storage_service.dart';
 
 class CryptogramArchiveScreen extends ConsumerStatefulWidget {
   const CryptogramArchiveScreen({super.key});
@@ -196,11 +197,32 @@ class _CryptogramArchiveScreenState extends ConsumerState<CryptogramArchiveScree
   }
 }
 
-class _ArchiveItem extends StatelessWidget {
+class _ArchiveItem extends StatefulWidget {
   final CryptogramPuzzle puzzle;
   final VoidCallback onTap;
 
   const _ArchiveItem({required this.puzzle, required this.onTap});
+
+  @override
+  State<_ArchiveItem> createState() => _ArchiveItemState();
+}
+
+class _ArchiveItemState extends State<_ArchiveItem> {
+  final CryptogramStorageService _storageService = CryptogramStorageService();
+  bool _isCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCompletion();
+  }
+
+  Future<void> _checkCompletion() async {
+    final completed = await _storageService.isAnyPuzzleCompleted(widget.puzzle.date);
+    if (mounted) {
+      setState(() => _isCompleted = completed);
+    }
+  }
 
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty) {
@@ -223,7 +245,7 @@ class _ArchiveItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -233,15 +255,27 @@ class _ArchiveItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      dateFormat.format(DateTime.parse(puzzle.date)),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          dateFormat.format(DateTime.parse(widget.puzzle.date)),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_isCompleted) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.check_circle,
+                            size: 20,
+                            color: Colors.green,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '— ${puzzle.author}',
+                      '— ${widget.puzzle.author}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontStyle: FontStyle.italic,
                         color: theme.colorScheme.secondary,
@@ -253,11 +287,11 @@ class _ArchiveItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getDifficultyColor(puzzle.difficultyLabel),
+                  color: _getDifficultyColor(widget.puzzle.difficultyLabel),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  puzzle.difficultyLabel.toUpperCase(),
+                  widget.puzzle.difficultyLabel.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -267,8 +301,8 @@ class _ArchiveItem extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Icon(
-                Icons.play_circle_outline,
-                color: theme.colorScheme.primary,
+                _isCompleted ? Icons.check_circle : Icons.play_circle_outline,
+                color: _isCompleted ? Colors.green : theme.colorScheme.primary,
                 size: 28,
               ),
             ],

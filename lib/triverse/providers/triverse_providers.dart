@@ -57,6 +57,7 @@ class TriverseGameState {
   final int? selectedAnswerIndex;
   final int timerStartMs;
   final String? errorMessage;
+  final bool isArchive;
 
   const TriverseGameState({
     this.puzzle,
@@ -68,6 +69,7 @@ class TriverseGameState {
     this.selectedAnswerIndex,
     this.timerStartMs = 0,
     this.errorMessage,
+    this.isArchive = false,
   });
 
   TriverseGameState copyWith({
@@ -80,6 +82,7 @@ class TriverseGameState {
     int? selectedAnswerIndex,
     int? timerStartMs,
     String? errorMessage,
+    bool? isArchive,
     bool clearFiftyFifty = false,
     bool clearSelectedAnswer = false,
   }) {
@@ -95,6 +98,7 @@ class TriverseGameState {
           clearSelectedAnswer ? null : (selectedAnswerIndex ?? this.selectedAnswerIndex),
       timerStartMs: timerStartMs ?? this.timerStartMs,
       errorMessage: errorMessage ?? this.errorMessage,
+      isArchive: isArchive ?? this.isArchive,
     );
   }
 
@@ -131,7 +135,7 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
   }
 
   void loadArchivePuzzle(TriverseDaily puzzle) {
-    state = state.copyWith(puzzle: puzzle);
+    state = state.copyWith(puzzle: puzzle, isArchive: true);
   }
 
   void startGame() {
@@ -262,11 +266,18 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
   Future<void> _saveCompletion() async {
     if (state.puzzle == null) return;
     final storage = _ref.read(triverseStorageProvider);
-    await storage.markPuzzleCompleted(state.puzzle!.date, state.totalScore);
-    _ref.invalidate(triverseStreakProvider);
+
+    if (state.isArchive) {
+      // Archive puzzles don't affect streak
+      await storage.markArchivePuzzleCompleted(state.puzzle!.date, state.totalScore);
+    } else {
+      // Daily puzzles affect streak
+      await storage.markPuzzleCompleted(state.puzzle!.date, state.totalScore);
+      _ref.invalidate(triverseStreakProvider);
+      _ref.invalidate(triverseAlreadyPlayedTodayProvider);
+      _ref.invalidate(triverseTodaysScoreProvider);
+    }
     _ref.invalidate(triverseCompletedCountProvider);
-    _ref.invalidate(triverseAlreadyPlayedTodayProvider);
-    _ref.invalidate(triverseTodaysScoreProvider);
     _ref.invalidate(triverseCompletedPuzzlesProvider);
   }
 
@@ -289,8 +300,11 @@ final triverseStreakProvider = FutureProvider<int>((ref) async {
 
 final triverseCompletedCountProvider = FutureProvider<int>((ref) async {
   final storage = ref.watch(triverseStorageProvider);
-  final completed = await storage.getCompletedPuzzles();
-  return completed.length;
+  final dailyCompleted = await storage.getCompletedPuzzles();
+  final archiveCompleted = await storage.getCompletedArchivePuzzles();
+  // Merge both sets to avoid double-counting
+  final allCompleted = {...dailyCompleted, ...archiveCompleted};
+  return allCompleted.length;
 });
 
 final triverseAlreadyPlayedTodayProvider = FutureProvider<bool>((ref) async {
@@ -312,11 +326,19 @@ final triverseTodaysScoreProvider = FutureProvider<int?>((ref) async {
 final triverseCompletedPuzzlesProvider =
     FutureProvider<Map<String, dynamic>>((ref) async {
   final storage = ref.watch(triverseStorageProvider);
-  final completed = await storage.getCompletedPuzzles();
-  final scores = await storage.getPuzzleScores();
+  // Get both daily and archive completed puzzles
+  final dailyCompleted = await storage.getCompletedPuzzles();
+  final archiveCompleted = await storage.getCompletedArchivePuzzles();
+  final dailyScores = await storage.getPuzzleScores();
+  final archiveScores = await storage.getArchivePuzzleScores();
+
+  // Merge both sets
+  final allCompleted = {...dailyCompleted, ...archiveCompleted};
+  final allScores = {...dailyScores, ...archiveScores};
+
   return {
-    'completed': completed,
-    'scores': scores,
+    'completed': allCompleted,
+    'scores': allScores,
   };
 });
 

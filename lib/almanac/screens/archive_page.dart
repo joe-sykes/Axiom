@@ -10,6 +10,7 @@ import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/game_keyboard.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
+import '../services/storage_service.dart';
 
 class ArchivePage extends ConsumerStatefulWidget {
   const ArchivePage({super.key});
@@ -198,7 +199,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
   }
 }
 
-class _ArchiveItem extends StatelessWidget {
+class _ArchiveItem extends StatefulWidget {
   final AlmanacPuzzle puzzle;
   final VoidCallback onTap;
 
@@ -206,6 +207,27 @@ class _ArchiveItem extends StatelessWidget {
     required this.puzzle,
     required this.onTap,
   });
+
+  @override
+  State<_ArchiveItem> createState() => _ArchiveItemState();
+}
+
+class _ArchiveItemState extends State<_ArchiveItem> {
+  final StorageService _storageService = StorageService();
+  bool _isCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCompletion();
+  }
+
+  Future<void> _checkCompletion() async {
+    final completed = await _storageService.isAnyPuzzleCompleted(widget.puzzle.date);
+    if (mounted) {
+      setState(() => _isCompleted = completed);
+    }
+  }
 
   String _formatDate(String dateStr) {
     try {
@@ -223,7 +245,7 @@ class _ArchiveItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -233,15 +255,27 @@ class _ArchiveItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _formatDate(puzzle.date),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          _formatDate(widget.puzzle.date),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_isCompleted) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.check_circle,
+                            size: 20,
+                            color: Colors.green,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      puzzle.description,
+                      widget.puzzle.description,
                       style: theme.textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -251,9 +285,9 @@ class _ArchiveItem extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Icon(
-                Icons.play_circle_outline,
+                _isCompleted ? Icons.check_circle : Icons.play_circle_outline,
                 size: 32,
-                color: theme.colorScheme.tertiary,
+                color: _isCompleted ? Colors.green : theme.colorScheme.tertiary,
               ),
             ],
           ),
@@ -275,7 +309,25 @@ class PuzzleDetailPage extends ConsumerStatefulWidget {
 class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
   final TextEditingController _answerController = TextEditingController();
   final FocusNode _answerFocusNode = FocusNode();
+  final StorageService _storageService = StorageService();
   bool? _isCorrect;
+  bool _alreadySolved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAlreadySolved();
+  }
+
+  Future<void> _checkIfAlreadySolved() async {
+    final solved = await _storageService.isAnyPuzzleCompleted(widget.puzzle.date);
+    if (mounted) {
+      setState(() {
+        _alreadySolved = solved;
+        if (solved) _isCorrect = true;
+      });
+    }
+  }
 
   bool get _useCustomKeyboard {
     if (!kIsWeb) {
@@ -293,11 +345,22 @@ class _PuzzleDetailPageState extends ConsumerState<PuzzleDetailPage> {
     super.dispose();
   }
 
-  void _submitAnswer() {
+  Future<void> _submitAnswer() async {
+    if (_alreadySolved) return; // Prevent re-answering
+
     final guess = _answerController.text;
     if (guess.trim().isEmpty) return;
 
     final correct = widget.puzzle.checkAnswer(guess);
+
+    if (correct) {
+      // Save to archive storage (does NOT affect streak)
+      await _storageService.markArchivePuzzleCompleted(widget.puzzle.date);
+      _alreadySolved = true;
+      // Refresh completed count so homepage updates
+      ref.invalidate(almanacCompletedCountProvider);
+    }
+
     setState(() {
       _isCorrect = correct;
     });

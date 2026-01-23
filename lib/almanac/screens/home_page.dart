@@ -10,6 +10,7 @@ import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/game_keyboard.dart';
 import '../../core/widgets/stats_bar.dart';
+import '../../sharing/providers/sharing_providers.dart';
 import '../models/puzzle.dart';
 import '../providers/almanac_providers.dart';
 import '../services/storage_service.dart';
@@ -189,8 +190,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
         gameState.todaysPuzzle!.date,
         score,
       );
-      // Refresh streak calculation
+      // Refresh providers so homepage updates
       ref.invalidate(almanacStreakProvider);
+      ref.invalidate(almanacCompletedCountProvider);
+      ref.invalidate(almanacTodaysStoredScoreProvider);
       _showCompletionDialog(score);
     }
     setState(() {

@@ -70,8 +70,8 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
     if (widget.isDaily && mounted) {
       final hasCompleted = ref.read(hasCompletedTodayProvider);
       if (hasCompleted) {
-        // Redirect back to home - they've already completed today's puzzle
-        Navigator.of(context).pop();
+        // Redirect to results screen instead of just popping
+        Navigator.of(context).pushReplacementNamed(RouteNames.doubletResults);
         return;
       }
     }

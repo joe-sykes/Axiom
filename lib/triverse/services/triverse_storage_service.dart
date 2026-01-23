@@ -6,6 +6,8 @@ class TriverseStorageService {
   static const String _completedPuzzlesKey = 'triverse_completed_puzzles';
   static const String _puzzleScoresKey = 'triverse_puzzle_scores';
   static const String _hasSeenHelpKey = 'triverse_has_seen_help';
+  static const String _archiveCompletedKey = 'triverse_archive_completed';
+  static const String _archiveScoresKey = 'triverse_archive_scores';
 
   SharedPreferences? _prefs;
 
@@ -106,5 +108,49 @@ class TriverseStorageService {
   Future<void> markHelpAsSeen() async {
     final p = await prefs;
     await p.setBool(_hasSeenHelpKey, true);
+  }
+
+  // ============ Archive Puzzles ============
+
+  /// Get list of completed archive puzzle dates.
+  Future<Set<String>> getCompletedArchivePuzzles() async {
+    final p = await prefs;
+    final List<String> completed = p.getStringList(_archiveCompletedKey) ?? [];
+    return completed.toSet();
+  }
+
+  /// Mark an archive puzzle as completed (does NOT affect streak).
+  Future<void> markArchivePuzzleCompleted(String date, int score) async {
+    final p = await prefs;
+    final completed = await getCompletedArchivePuzzles();
+    completed.add(date);
+    await p.setStringList(_archiveCompletedKey, completed.toList());
+
+    // Store score
+    final scores = await getArchivePuzzleScores();
+    scores[date] = score;
+    await p.setString(_archiveScoresKey, jsonEncode(scores));
+  }
+
+  /// Get archive puzzle scores map.
+  Future<Map<String, int>> getArchivePuzzleScores() async {
+    final p = await prefs;
+    final String? scoresJson = p.getString(_archiveScoresKey);
+    if (scoresJson == null) return {};
+    final Map<String, dynamic> decoded = jsonDecode(scoresJson);
+    return decoded.map((key, value) => MapEntry(key, value as int));
+  }
+
+  /// Check if an archive puzzle is completed.
+  Future<bool> isArchivePuzzleCompleted(String date) async {
+    final completed = await getCompletedArchivePuzzles();
+    return completed.contains(date);
+  }
+
+  /// Check if any puzzle (daily or archive) is completed for a date.
+  Future<bool> isAnyPuzzleCompleted(String date) async {
+    final dailyCompleted = await getCompletedPuzzles();
+    if (dailyCompleted.contains(date)) return true;
+    return await isArchivePuzzleCompleted(date);
   }
 }
