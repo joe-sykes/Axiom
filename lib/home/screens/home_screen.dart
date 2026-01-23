@@ -7,7 +7,6 @@ import '../../core/providers/core_providers.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/migration_banner.dart';
-import '../../core/widgets/migration_debug_dialog.dart';
 import '../../cryptix/providers/cryptix_providers.dart';
 import '../../cryptogram/providers/cryptogram_providers.dart';
 import '../../doublet/providers/providers.dart';
@@ -100,15 +99,6 @@ class _AxiomHomeScreenState extends ConsumerState<AxiomHomeScreen> {
               ),
               centerTitle: true,
               actions: [
-                // Debug button - remove before production!
-                IconButton(
-                  icon: const Icon(Icons.bug_report),
-                  onPressed: () => showDialog(
-                    context: context,
-                    builder: (context) => const MigrationDebugDialog(),
-                  ),
-                  tooltip: 'Migration Debug',
-                ),
                 IconButton(
                   icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
                   onPressed: () =>
