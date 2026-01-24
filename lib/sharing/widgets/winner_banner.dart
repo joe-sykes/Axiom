@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../constants/winner_messages.dart';
 
 /// Banner displaying the winner of a score comparison.
-class WinnerBanner extends StatelessWidget {
+class WinnerBanner extends StatefulWidget {
   final int myTotal;
   final int friendTotal;
   final String myName;
@@ -18,20 +19,51 @@ class WinnerBanner extends StatelessWidget {
   });
 
   @override
+  State<WinnerBanner> createState() => _WinnerBannerState();
+}
+
+class _WinnerBannerState extends State<WinnerBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  int _loopCount = 0;
+  static const int _maxLoops = 3;
+
+  bool get _iWin => widget.myTotal > widget.friendTotal;
+  bool get _isTie => widget.myTotal == widget.friendTotal;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _loopCount++;
+        if (_loopCount < _maxLoops) {
+          _controller.forward(from: 0);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final iWin = myTotal > friendTotal;
-    final isTie = myTotal == friendTotal;
-    final diff = (myTotal - friendTotal).abs();
+    final diff = (widget.myTotal - widget.friendTotal).abs();
 
     final message = WinnerMessages.getMessage(
-      iWin: iWin,
-      isTie: isTie,
+      iWin: _iWin,
+      isTie: _isTie,
       scoreDifference: diff,
     );
 
-    final gradientColors = isTie
+    final gradientColors = _isTie
         ? [Colors.grey.shade600, Colors.grey.shade700]
-        : iWin
+        : _iWin
             ? [Colors.green.shade600, Colors.teal.shade600]
             : [Colors.orange.shade600, Colors.deepOrange.shade600];
 
@@ -55,16 +87,33 @@ class WinnerBanner extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Trophy/handshake icon
-          Icon(
-            isTie ? Icons.handshake : Icons.emoji_events,
-            size: 64,
-            color: Colors.white,
-          ),
+          // Trophy animation (when winning) or handshake icon (tie/loss)
+          if (_iWin)
+            SizedBox(
+              height: 120,
+              width: 120,
+              child: Lottie.asset(
+                'assets/Trophy_winner.json',
+                controller: _controller,
+                onLoaded: (composition) {
+                  _controller.duration = composition.duration;
+                  _controller.forward();
+                },
+                fit: BoxFit.contain,
+                frameRate: const FrameRate(60),
+                renderCache: RenderCache.raster,
+              ),
+            )
+          else
+            Icon(
+              _isTie ? Icons.handshake : Icons.sentiment_dissatisfied,
+              size: 64,
+              color: Colors.white,
+            ),
           const SizedBox(height: 16),
           // Winner text
           Text(
-            _getWinnerText(iWin, isTie),
+            _getWinnerText(),
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -74,7 +123,7 @@ class WinnerBanner extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // Score difference
-          if (!isTie)
+          if (!_isTie)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
@@ -105,13 +154,13 @@ class WinnerBanner extends StatelessWidget {
     );
   }
 
-  String _getWinnerText(bool iWin, bool isTie) {
-    if (isTie) {
+  String _getWinnerText() {
+    if (_isTie) {
       return "IT'S A TIE!";
     }
-    if (iWin) {
+    if (_iWin) {
       return 'YOU WIN!';
     }
-    return '$friendName WINS!';
+    return '${widget.friendName} WINS!';
   }
 }

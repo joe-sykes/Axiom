@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../core/constants/route_names.dart';
 import '../core/constants/ui_constants.dart';
@@ -39,7 +40,9 @@ class DoubletResultsScreen extends ConsumerWidget {
       incorrectSubmissions: gameState.incorrectSubmissions,
     );
 
-    return Scaffold(
+    final showConfetti = wasSuccessful && score >= 60;
+
+    final scaffold = Scaffold(
       appBar: AppBar(
         title: const Text('RESULTS'),
         automaticallyImplyLeading: false,
@@ -53,195 +56,216 @@ class DoubletResultsScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                children: [
-                  // Result icon
-                  Icon(
-                    wasSuccessful ? Icons.celebration : Icons.sentiment_dissatisfied,
-                    size: 80,
-                    color: wasSuccessful ? Colors.amber : Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
+                  children: [
+                    // Result icon
+                    Icon(
+                      wasSuccessful ? Icons.celebration : Icons.sentiment_dissatisfied,
+                      size: 80,
+                      color: wasSuccessful ? Colors.amber : Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Result text
-                  Text(
-                    wasSuccessful ? 'Congratulations!' : 'Better luck next time!',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 32),
+                    // Result text
+                    Text(
+                      wasSuccessful ? 'Congratulations!' : 'Better luck next time!',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 32),
 
-                  // Score card
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Score',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '$score',
-                            style: Theme.of(context)
-                                .textTheme
-                                .displayLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: _getScoreColor(score),
+                    // Score card
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Score',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '$score',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .displayLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getScoreColor(score),
+                                  ),
+                            ),
+                            Text(
+                              'out of 100',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 24),
+                            const Divider(),
+                            const SizedBox(height: 16),
+
+                            // Breakdown
+                            _BreakdownRow(
+                              label: 'Base score',
+                              value: '+${breakdown.baseScore}',
+                              color: Colors.green,
+                            ),
+                            if (breakdown.timePenalty > 0)
+                              _BreakdownRow(
+                                label: 'Time penalty (${breakdown.formattedTime})',
+                                value: '-${breakdown.timePenalty}',
+                                color: Colors.red,
+                              ),
+                            if (breakdown.accuracyPenalty > 0)
+                              _BreakdownRow(
+                                label: 'Mistakes (${breakdown.incorrectSubmissions})',
+                                value: '-${breakdown.accuracyPenalty}',
+                                color: Colors.red,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Streak card (only for daily)
+                    if (gameState.isDailyPuzzle)
+                      Semantics(
+                        label: 'Streak statistics',
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                StatItem(
+                                  icon: Icons.local_fire_department,
+                                  value: '${stats.currentStreak}',
+                                  label: 'Current Streak',
+                                  color: Colors.orange,
+                                  iconSize: 28,
+                                  valueStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
-                          ),
-                          Text(
-                            'out of 100',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 24),
-                          const Divider(),
-                          const SizedBox(height: 16),
-
-                          // Breakdown
-                          _BreakdownRow(
-                            label: 'Base score',
-                            value: '+${breakdown.baseScore}',
-                            color: Colors.green,
-                          ),
-                          if (breakdown.timePenalty > 0)
-                            _BreakdownRow(
-                              label: 'Time penalty (${breakdown.formattedTime})',
-                              value: '-${breakdown.timePenalty}',
-                              color: Colors.red,
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                                StatItem(
+                                  icon: Icons.emoji_events,
+                                  value: '${stats.longestStreak}',
+                                  label: 'Best Streak',
+                                  color: Colors.amber,
+                                  iconSize: 28,
+                                  valueStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
                             ),
-                          if (breakdown.accuracyPenalty > 0)
-                            _BreakdownRow(
-                              label: 'Mistakes (${breakdown.incorrectSubmissions})',
-                              value: '-${breakdown.accuracyPenalty}',
-                              color: Colors.red,
-                            ),
-                        ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                  // Streak card (only for daily)
-                  if (gameState.isDailyPuzzle)
+                    // Solution reveal (if failed)
+                    if (!wasSuccessful)
+                      puzzleAsync.when(
+                        data: (puzzle) => Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Solution',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 12),
+                                ...puzzle.ladder.map((word) => Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      child: Text(
+                                        word,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge
+                                            ?.copyWith(
+                                              letterSpacing: 4,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    )),
+                              ],
+                            ),
+                          ),
+                        ),
+                        loading: () => const SizedBox(),
+                        error: (_, __) => const SizedBox(),
+                      ),
+                    const SizedBox(height: 24),
+
+                    // Share button
                     Semantics(
-                      label: 'Streak statistics',
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              StatItem(
-                                icon: Icons.local_fire_department,
-                                value: '${stats.currentStreak}',
-                                label: 'Current Streak',
-                                color: Colors.orange,
-                                iconSize: 28,
-                                valueStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                              Container(
-                                width: 1,
-                                height: 40,
-                                color: Theme.of(context).dividerColor,
-                              ),
-                              StatItem(
-                                icon: Icons.emoji_events,
-                                value: '${stats.longestStreak}',
-                                label: 'Best Streak',
-                                color: Colors.amber,
-                                iconSize: 28,
-                                valueStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ],
+                      button: true,
+                      label: 'Share your result',
+                      child: OutlinedButton.icon(
+                        onPressed: () => _shareResult(context, gameState, score),
+                        icon: const Icon(Icons.share),
+                        label: const Text('Share'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Home button
+                    Semantics(
+                      button: true,
+                      label: 'Go back to home screen',
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          ref.read(gameStateProvider.notifier).clearGame();
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            RouteNames.doublet,
+                            (route) => route.settings.name == RouteNames.home,
+                          );
+                        },
+                        icon: const Icon(Icons.home),
+                        label: const Text('Back to Home'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
                           ),
                         ),
                       ),
                     ),
-                  const SizedBox(height: 24),
-
-                  // Solution reveal (if failed)
-                  if (!wasSuccessful)
-                    puzzleAsync.when(
-                      data: (puzzle) => Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Solution',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 12),
-                              ...puzzle.ladder.map((word) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text(
-                                      word,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            letterSpacing: 4,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ),
-                      loading: () => const SizedBox(),
-                      error: (_, __) => const SizedBox(),
-                    ),
-                  const SizedBox(height: 24),
-
-                  // Share button
-                  Semantics(
-                    button: true,
-                    label: 'Share your result',
-                    child: OutlinedButton.icon(
-                      onPressed: () => _shareResult(context, gameState, score),
-                      icon: const Icon(Icons.share),
-                      label: const Text('Share'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Home button
-                  Semantics(
-                    button: true,
-                    label: 'Go back to home screen',
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        ref.read(gameStateProvider.notifier).clearGame();
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          RouteNames.doublet,
-                          (route) => route.settings.name == RouteNames.home,
-                        );
-                      },
-                      icon: const Icon(Icons.home),
-                      label: const Text('Back to Home'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+
+    if (!showConfetti) {
+      return scaffold;
+    }
+
+    return Stack(
+      children: [
+        scaffold,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Lottie.asset(
+              'assets/confetti_success.json',
+              repeat: false,
+              fit: BoxFit.cover,
+              frameRate: const FrameRate(60),
+              renderCache: RenderCache.raster,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

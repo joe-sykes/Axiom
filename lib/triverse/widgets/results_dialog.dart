@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/axiom_theme.dart';
 
@@ -88,8 +89,11 @@ $taunt
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final showConfetti = score >= 50;
 
-    return Dialog(
+    return Stack(
+      children: [
+        Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -207,6 +211,20 @@ $taunt
           ),
         ),
       ),
+        ),
+        if (showConfetti)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Lottie.asset(
+                'assets/confetti_success.json',
+                repeat: false,
+                fit: BoxFit.cover,
+                frameRate: const FrameRate(60),
+                renderCache: RenderCache.raster,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

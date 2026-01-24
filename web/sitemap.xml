@@ -1,67 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://axiompuzzles.web.app/</loc>
+    <loc>https://axiom-puzzles.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/almanac</loc>
+    <loc>https://axiom-puzzles.com/almanac</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/almanac/archive</loc>
+    <loc>https://axiom-puzzles.com/almanac/archive</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/cryptix</loc>
+    <loc>https://axiom-puzzles.com/cryptix</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/cryptix/archive</loc>
+    <loc>https://axiom-puzzles.com/cryptix/archive</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/cryptix/help</loc>
+    <loc>https://axiom-puzzles.com/cryptix/help</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/doublet</loc>
+    <loc>https://axiom-puzzles.com/doublet</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/doublet/archive</loc>
+    <loc>https://axiom-puzzles.com/doublet/archive</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/triverse</loc>
+    <loc>https://axiom-puzzles.com/triverse</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/triverse/archive</loc>
+    <loc>https://axiom-puzzles.com/triverse/archive</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/cryptogram</loc>
+    <loc>https://axiom-puzzles.com/cryptogram</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/cryptogram/archive</loc>
+    <loc>https://axiom-puzzles.com/cryptogram/archive</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://axiompuzzles.web.app/privacy</loc>
+    <loc>https://axiom-puzzles.com/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

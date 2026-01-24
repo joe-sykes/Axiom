@@ -24,6 +24,7 @@ dependencies:
 
   # UI
   google_fonts: ^6.2.1
+  lottie: ^3.3.1
   cupertino_icons: ^1.0.8
   intl: ^0.19.0
 
@@ -43,3 +44,5 @@ flutter:
   assets:
     - assets/dictionary.txt
     - assets/images/
+    - assets/confetti_success.json
+    - assets/Trophy_winner.json

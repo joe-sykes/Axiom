@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../core/constants/route_names.dart';
 import '../../core/widgets/app_footer.dart';
@@ -220,6 +221,8 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
       message = 'Puzzle Complete!';
     }
 
+    final showConfetti = wasSuccessful && score >= 60;
+
     await showDialog(
       context: context,
       barrierDismissible: true,
@@ -229,7 +232,9 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
         final screenHeight = MediaQuery.of(dialogContext).size.height;
         final isCompact = screenHeight < 700;
 
-        return Dialog(
+        return Stack(
+          children: [
+            Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 400, maxHeight: screenHeight * 0.85),
@@ -397,6 +402,20 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
               ),
             ),
           ),
+            ),
+            if (showConfetti)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Lottie.asset(
+                    'assets/confetti_success.json',
+                    repeat: false,
+                    fit: BoxFit.cover,
+                    frameRate: const FrameRate(60),
+                    renderCache: RenderCache.raster,
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

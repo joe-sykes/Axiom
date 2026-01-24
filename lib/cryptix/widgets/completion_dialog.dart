@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/user_stats.dart';
 import '../services/scoring_service.dart';
@@ -140,8 +141,11 @@ Play the daily cryptic clue at https://axiom-puzzles.com
     final message = ScoringService.getScoreMessage(score);
     final screenHeight = MediaQuery.of(context).size.height;
     final isCompact = screenHeight < 700;
+    final showConfetti = score >= 60;
 
-    return Dialog(
+    return Stack(
+      children: [
+        Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -263,6 +267,20 @@ Play the daily cryptic clue at https://axiom-puzzles.com
           ),
         ),
       ),
+        ),
+        if (showConfetti)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Lottie.asset(
+                'assets/confetti_success.json',
+                repeat: false,
+                fit: BoxFit.cover,
+                frameRate: const FrameRate(60),
+                renderCache: RenderCache.raster,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
