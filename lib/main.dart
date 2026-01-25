@@ -7,7 +7,6 @@ import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
-import 'core/firebase/firebase_manager.dart';
 import 'core/providers/core_providers.dart';
 import 'core/services/migration_service.dart';
 import 'core/services/migration_platform.dart' as migration;
@@ -42,8 +41,7 @@ void main() async {
     usePathUrlStrategy();
   }
 
-  // Initialize Firebase for all apps
-  await FirebaseManager.initializeAll();
+  // Firebase is now lazily initialized per-game for faster startup
 
   // Preload Lottie animations (don't await - load in background)
   _preloadLottieAnimations();

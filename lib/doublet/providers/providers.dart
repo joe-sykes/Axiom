@@ -66,6 +66,7 @@ final todaysPuzzleNumberProvider = Provider<int>((ref) {
 
 /// Fetch today's puzzle
 final todaysPuzzleProvider = FutureProvider<Puzzle>((ref) async {
+  await FirebaseManager.ensureDoubletInitialized();
   final service = ref.watch(puzzleServiceProvider);
   final index = ref.watch(todaysPuzzleIndexProvider);
   return service.getPuzzle(index);
@@ -73,6 +74,7 @@ final todaysPuzzleProvider = FutureProvider<Puzzle>((ref) async {
 
 /// Fetch a specific puzzle by index
 final puzzleProvider = FutureProvider.family<Puzzle, int>((ref, index) async {
+  await FirebaseManager.ensureDoubletInitialized();
   final service = ref.watch(puzzleServiceProvider);
   return service.getPuzzle(index);
 });

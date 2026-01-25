@@ -26,12 +26,14 @@ final almanacPuzzleServiceProvider = Provider<AlmanacPuzzleService>((ref) {
 
 /// Today's puzzle
 final almanacTodaysPuzzleProvider = FutureProvider<AlmanacPuzzle?>((ref) async {
+  await FirebaseManager.ensureAlmanacInitialized();
   final service = ref.watch(almanacPuzzleServiceProvider);
   return service.getTodaysPuzzle();
 });
 
 /// Archive puzzles
 final almanacArchivePuzzlesProvider = FutureProvider<List<AlmanacPuzzle>>((ref) async {
+  await FirebaseManager.ensureAlmanacInitialized();
   final service = ref.watch(almanacPuzzleServiceProvider);
   return service.getPastPuzzles();
 });

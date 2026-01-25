@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/firebase/firebase_manager.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../models/puzzle.dart';
 import '../providers/cryptogram_providers.dart';
@@ -28,6 +29,7 @@ class _CryptogramArchiveScreenState extends ConsumerState<CryptogramArchiveScree
 
   Future<void> _loadPuzzles() async {
     try {
+      await FirebaseManager.ensureCryptogramInitialized();
       final service = ref.read(cryptogramFirestoreServiceProvider);
       final puzzles = await service.getArchivePuzzles(limit: 100);
 

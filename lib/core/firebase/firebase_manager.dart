@@ -8,7 +8,8 @@ import 'doublet_firebase.dart';
 import 'triverse_firebase.dart';
 
 /// Manages multiple Firebase projects for the Axiom app.
-/// Each game (Almanac, Cryptix, Doublet, Triverse) has its own Firebase project.
+/// Each game (Almanac, Cryptix, Doublet, Triverse, Cryptogram) has its own Firebase project.
+/// Firebase apps are lazily initialized when first accessed to improve startup performance.
 class FirebaseManager {
   static FirebaseApp? _almanacApp;
   static FirebaseApp? _cryptixApp;
@@ -16,43 +17,62 @@ class FirebaseManager {
   static FirebaseApp? _doubletApp;
   static FirebaseApp? _triverseApp;
 
-  static bool _initialized = false;
+  static bool _defaultInitialized = false;
 
-  /// Initialize all Firebase apps
-  static Future<void> initializeAll() async {
-    if (_initialized) return;
-
-    // Initialize Almanac as the default app
+  /// Initialize the default Firebase app (required before any secondary apps)
+  static Future<void> _ensureDefaultInitialized() async {
+    if (_defaultInitialized) return;
     await Firebase.initializeApp(
       options: AlmanacFirebaseOptions.currentPlatform,
     );
     _almanacApp = Firebase.app();
+    _defaultInitialized = true;
+  }
 
-    // Initialize Cryptix as a secondary app
+  /// Ensure Almanac Firebase is initialized
+  static Future<void> ensureAlmanacInitialized() async {
+    if (_almanacApp != null) return;
+    await _ensureDefaultInitialized();
+  }
+
+  /// Ensure Cryptix Firebase is initialized
+  static Future<void> ensureCryptixInitialized() async {
+    if (_cryptixApp != null) return;
+    await _ensureDefaultInitialized();
     _cryptixApp = await Firebase.initializeApp(
       name: 'cryptix',
       options: CryptixFirebaseOptions.currentPlatform,
     );
+  }
 
-    // Initialize Doublet as a secondary app
+  /// Ensure Doublet Firebase is initialized
+  static Future<void> ensureDoubletInitialized() async {
+    if (_doubletApp != null) return;
+    await _ensureDefaultInitialized();
     _doubletApp = await Firebase.initializeApp(
       name: 'doublet',
       options: DoubletFirebaseOptions.currentPlatform,
     );
+  }
 
-    // Initialize Triverse as a secondary app
+  /// Ensure Triverse Firebase is initialized
+  static Future<void> ensureTriverseInitialized() async {
+    if (_triverseApp != null) return;
+    await _ensureDefaultInitialized();
     _triverseApp = await Firebase.initializeApp(
       name: 'triverse',
       options: TriverseFirebaseOptions.currentPlatform,
     );
+  }
 
-    // Initialize Cryptogram as a secondary app
+  /// Ensure Cryptogram Firebase is initialized
+  static Future<void> ensureCryptogramInitialized() async {
+    if (_cryptogramApp != null) return;
+    await _ensureDefaultInitialized();
     _cryptogramApp = await Firebase.initializeApp(
       name: 'cryptogram',
       options: CryptogramFirebaseOptions.currentPlatform,
     );
-
-    _initialized = true;
   }
 
   /// Get the Almanac Firebase app

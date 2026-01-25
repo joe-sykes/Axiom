@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/firebase/firebase_manager.dart';
 import '../models/puzzle.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -10,6 +11,7 @@ final cryptogramStorageServiceProvider = Provider((ref) => CryptogramStorageServ
 
 // Daily puzzle
 final cryptogramDailyPuzzleProvider = FutureProvider<CryptogramPuzzle?>((ref) async {
+  await FirebaseManager.ensureCryptogramInitialized();
   final service = ref.read(cryptogramFirestoreServiceProvider);
   return service.getDailyPuzzle();
 });

@@ -104,6 +104,8 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
     state = state.copyWith(state: CryptixPuzzleState.loading);
 
     try {
+      // Lazy init Firebase for Cryptix
+      await FirebaseManager.ensureCryptixInitialized();
       final stats = _storage.getStats();
       state = state.copyWith(stats: stats);
       await loadTodaysPuzzle();

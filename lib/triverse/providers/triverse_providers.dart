@@ -39,6 +39,7 @@ final triverseStorageProvider = Provider<TriverseStorageService>((ref) {
 // ============ Puzzle State ============
 
 final triverseTodaysPuzzleProvider = FutureProvider<TriverseDaily?>((ref) async {
+  await FirebaseManager.ensureTriverseInitialized();
   final service = ref.watch(triverseServiceProvider);
   return service.getTodaysPuzzle();
 });
@@ -344,6 +345,7 @@ final triverseCompletedPuzzlesProvider =
 
 final triverseArchivePuzzlesProvider =
     FutureProvider<List<TriverseDaily>>((ref) async {
+  await FirebaseManager.ensureTriverseInitialized();
   final service = ref.watch(triverseServiceProvider);
   return service.getArchivePuzzles();
 });
