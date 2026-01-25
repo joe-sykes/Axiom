@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/services/analytics_service.dart';
 import '../core/constants/ui_constants.dart';
 import '../core/utils/date_utils.dart';
 import '../core/utils/scoring_utils.dart';
@@ -277,6 +278,9 @@ class DoubletResultsScreen extends ConsumerWidget {
   }
 
   void _shareResult(BuildContext context, gameState, int score) {
+    // Track share event
+    AnalyticsService.trackShare(GameNames.doublet);
+
     final puzzleNumber = gameState.isDailyPuzzle
         ? PuzzleDateUtils.getTodaysPuzzleNumber()
         : gameState.puzzleIndex + 1;

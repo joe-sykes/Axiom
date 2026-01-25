@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/theme/axiom_theme.dart';
 
 class TriverseResultsDialog extends StatelessWidget {
@@ -61,6 +62,9 @@ $taunt
   }
 
   Future<void> _shareScore(BuildContext context) async {
+    // Track share event
+    AnalyticsService.trackShare(GameNames.triverse);
+
     final message = _shareMessage;
 
     if (kIsWeb || _isDesktop) {

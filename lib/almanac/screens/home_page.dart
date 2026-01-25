@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../core/constants/route_names.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/game_keyboard.dart';
@@ -412,6 +413,9 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   }
 
   void _shareScore(int score) {
+    // Track share event
+    AnalyticsService.trackShare(GameNames.almanac);
+
     final emojis = _getScoreEmojis(score);
     final streakText = _streak == 1 ? 'day' : 'days';
 

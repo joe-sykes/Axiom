@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 
+import '../../core/services/analytics_service.dart';
 import '../models/daily_scores.dart';
 import '../providers/sharing_providers.dart';
 import 'compare_input_dialog.dart';
@@ -161,7 +162,7 @@ class ShareOptionsPanel extends ConsumerWidget {
       return;
     }
 
-    await _shareContent(context, url, 'Share your Axiom score');
+    await _shareContent(context, url, 'Share your Axiom score', 'link');
   }
 
   Future<void> _shareEmoji(BuildContext context, WidgetRef ref) async {
@@ -192,10 +193,12 @@ $tagline
 https://axiom-puzzles.com
 ''';
 
-    await _shareContent(context, message, 'Share your Axiom score');
+    await _shareContent(context, message, 'Share your Axiom score', 'emoji');
   }
 
-  Future<void> _shareContent(BuildContext context, String content, String subject) async {
+  Future<void> _shareContent(BuildContext context, String content, String subject, String method) async {
+    // Track share event
+    AnalyticsService.trackShare('daily_results', method: method);
     if (kIsWeb) {
       await Clipboard.setData(ClipboardData(text: content));
       if (context.mounted) {

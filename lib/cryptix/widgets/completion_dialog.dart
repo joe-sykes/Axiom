@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/user_stats.dart';
 import '../services/scoring_service.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/theme/axiom_theme.dart';
 
 class CompletionDialog extends StatelessWidget {
@@ -46,6 +47,9 @@ Play the daily cryptic clue at https://axiom-puzzles.com
   }
 
   Future<void> _shareScore(BuildContext context) async {
+    // Track share event
+    AnalyticsService.trackShare(GameNames.cryptix);
+
     final message = _shareMessage;
 
     // Always copy to clipboard on web

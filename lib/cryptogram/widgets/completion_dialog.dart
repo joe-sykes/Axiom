@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../core/services/analytics_service.dart';
 import '../../core/theme/axiom_theme.dart';
 
 class CryptogramCompletionDialog extends StatelessWidget {
@@ -44,6 +45,9 @@ Play the daily cryptogram at https://axiom-puzzles.com
   }
 
   Future<void> _shareScore(BuildContext context) async {
+    // Track share event
+    AnalyticsService.trackShare(GameNames.cryptogram);
+
     await Clipboard.setData(ClipboardData(text: _shareMessage));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
