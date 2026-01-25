@@ -102,6 +102,9 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     try {
       final puzzle = await _ref.read(almanacTodaysPuzzleProvider.future);
       if (puzzle != null) {
+        // Track game start
+        AnalyticsService.trackGameStart(GameNames.almanac);
+
         state = state.copyWith(
           todaysPuzzle: puzzle,
           state: AlmanacPuzzleState.ready,

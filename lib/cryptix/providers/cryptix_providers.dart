@@ -135,6 +135,9 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
             revealedLetters: List.from(progress.revealedLetters),
           );
         } else {
+          // Track game start (only if not already solved)
+          AnalyticsService.trackGameStart(GameNames.cryptix);
+
           state = state.copyWith(
             todaysPuzzle: puzzle,
             todaysProgress: progress,

@@ -96,6 +96,9 @@ class CryptogramGameNotifier extends StateNotifier<CryptogramGameState> {
   CryptogramGameNotifier(this._storage) : super(CryptogramGameState());
 
   void initPuzzle(CryptogramPuzzle puzzle) {
+    // Track game start
+    AnalyticsService.trackGameStart(GameNames.cryptogram);
+
     final cipher = puzzle.generateCipher();
     final encoded = puzzle.encodeQuote(cipher);
 

@@ -90,6 +90,9 @@ class GameStateNotifier extends StateNotifier<GameSession?> {
 
   /// Start a new game
   void startGame(Puzzle puzzle, bool isDailyPuzzle) {
+    // Track game start
+    AnalyticsService.trackGameStart(GameNames.doublet);
+
     state = GameSession.initial(
       puzzleIndex: puzzle.index,
       inputCount: puzzle.inputCount,

@@ -142,6 +142,10 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
 
   void startGame() {
     if (state.puzzle == null) return;
+
+    // Track game start
+    AnalyticsService.trackGameStart(GameNames.triverse);
+
     state = state.copyWith(
       phase: TriverseGamePhase.playing,
       currentQuestionIndex: 0,
