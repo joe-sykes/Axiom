@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/firebase_manager.dart';
+import '../../core/services/analytics_service.dart';
 import '../models/puzzle.dart';
 import '../models/puzzle_progress.dart';
 import '../models/user_stats.dart';
@@ -160,6 +161,7 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
 
   void useHint() {
     if (!state.hintUsed && !state.isSolved) {
+      AnalyticsService.trackHintUsed(GameNames.cryptix, 1);
       state = state.copyWith(hintUsed: true);
       _saveCurrentProgress();
     }
@@ -202,7 +204,7 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
     return isCorrect;
   }
 
-  Future<void> _handleCorrectGuess() async {
+  Future<void> _handleCorrectGuess({bool isArchive = false}) async {
     final elapsed = DateTime.now().difference(state.startTime ?? DateTime.now());
     final answerLength = state.todaysPuzzle!.answer.replaceAll(' ', '').length;
     final score = ScoringService.calculateScore(
@@ -211,6 +213,15 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
       incorrectGuesses: state.incorrectGuesses,
       revealedLetters: state.revealedLetters.length,
       totalLetters: answerLength,
+    );
+
+    // Track completion in analytics
+    AnalyticsService.trackGameComplete(
+      gameName: GameNames.cryptix,
+      score: score,
+      timeSeconds: elapsed.inSeconds,
+      hintsUsed: (state.hintUsed ? 1 : 0) + state.revealedLetters.length,
+      isArchive: isArchive,
     );
 
     final progress = PuzzleProgress(
@@ -277,6 +288,9 @@ class CryptixGameNotifier extends StateNotifier<CryptixGameState> {
       totalScore: state.stats.totalScore + score,
       lastPlayedDate: now,
     );
+
+    // Track streak milestones
+    AnalyticsService.trackStreakIfMilestone(GameNames.cryptix, newStreak);
 
     await _storage.saveStats(newStats);
     state = state.copyWith(stats: newStats);

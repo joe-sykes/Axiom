@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/firebase_manager.dart';
+import '../../core/services/analytics_service.dart';
 import '../core/utils/date_utils.dart';
 import '../core/utils/scoring_utils.dart';
 import '../models/game_session.dart';
@@ -123,6 +124,15 @@ class GameStateNotifier extends StateNotifier<GameSession?> {
       final score = ScoringUtils.calculateScore(
         timeTaken: state!.elapsedTime,
         incorrectSubmissions: state!.incorrectSubmissions,
+      );
+
+      // Track completion in analytics
+      AnalyticsService.trackGameComplete(
+        gameName: GameNames.doublet,
+        score: score,
+        timeSeconds: state!.elapsedTime.inSeconds,
+        hintsUsed: 0,
+        isArchive: !state!.isDailyPuzzle,
       );
 
       // Mark game as complete

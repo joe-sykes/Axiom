@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/firebase/firebase_manager.dart';
+import '../../core/services/analytics_service.dart';
 import '../models/puzzle.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -180,10 +181,15 @@ class CryptogramGameNotifier extends StateNotifier<CryptogramGameState> {
 
     final newRevealed = Set<String>.from(state.revealedLetters)..add(encoded);
 
+    final newHintsUsed = state.hintsUsed + 1;
+
+    // Track hint usage
+    AnalyticsService.trackHintUsed(GameNames.cryptogram, newHintsUsed);
+
     state = state.copyWith(
       userMapping: newMapping,
       revealedLetters: newRevealed,
-      hintsUsed: state.hintsUsed + 1,
+      hintsUsed: newHintsUsed,
       score: (state.score - 10).clamp(0, 100),
     );
 
@@ -205,6 +211,15 @@ class CryptogramGameNotifier extends StateNotifier<CryptogramGameState> {
     }).join('');
 
     if (decoded.toUpperCase() == state.puzzle!.quote.toUpperCase()) {
+      // Track completion in analytics
+      AnalyticsService.trackGameComplete(
+        gameName: GameNames.cryptogram,
+        score: state.score,
+        timeSeconds: 0, // Time not tracked in this game
+        hintsUsed: state.hintsUsed,
+        isArchive: false,
+      );
+
       state = state.copyWith(isComplete: true);
       _storage.recordCompletion(state.score);
     }

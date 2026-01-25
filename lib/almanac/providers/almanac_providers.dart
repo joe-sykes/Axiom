@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/firebase_manager.dart';
+import '../../core/services/analytics_service.dart';
 import '../models/puzzle.dart';
 import '../services/puzzle_service.dart';
 import '../services/storage_service.dart';
@@ -135,13 +136,18 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     final newRevealed = List<bool>.from(state.hintsRevealed);
     newRevealed[index] = true;
 
+    final newHintsUsed = state.hintsUsed + 1;
+
+    // Track hint usage
+    AnalyticsService.trackHintUsed(GameNames.almanac, newHintsUsed);
+
     state = state.copyWith(
       hintsRevealed: newRevealed,
-      hintsUsed: state.hintsUsed + 1,
+      hintsUsed: newHintsUsed,
     );
   }
 
-  bool checkAnswer(String guess) {
+  bool checkAnswer(String guess, {bool isArchive = false}) {
     if (state.todaysPuzzle == null) return false;
 
     final isCorrect = state.todaysPuzzle!.checkAnswer(guess);
@@ -149,6 +155,19 @@ class AlmanacGameNotifier extends StateNotifier<AlmanacGameState> {
     if (isCorrect) {
       // Calculate final score when solved
       final finalScore = _calculateFinalScore();
+      final timeSeconds = state.startTime != null
+          ? DateTime.now().difference(state.startTime!).inSeconds
+          : 0;
+
+      // Track completion in analytics
+      AnalyticsService.trackGameComplete(
+        gameName: GameNames.almanac,
+        score: finalScore,
+        timeSeconds: timeSeconds,
+        hintsUsed: state.hintsUsed,
+        isArchive: isArchive,
+      );
+
       state = state.copyWith(
         isCorrect: isCorrect,
         state: AlmanacPuzzleState.solved,

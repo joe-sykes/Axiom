@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firebase/firebase_manager.dart';
+import '../../core/services/analytics_service.dart';
 import '../models/triverse_puzzle.dart';
 import '../models/triverse_session.dart';
 import '../services/triverse_puzzle_service.dart';
@@ -258,6 +259,9 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
     wrongIndices.shuffle(_random);
     final toRemove = wrongIndices.take(2).toList();
 
+    // Track hint usage
+    AnalyticsService.trackHintUsed(GameNames.triverse, 1);
+
     state = state.copyWith(
       fiftyFiftyUsed: true,
       fiftyFiftyRemovedIndices: toRemove,
@@ -267,6 +271,18 @@ class TriverseGameNotifier extends StateNotifier<TriverseGameState> {
   Future<void> _saveCompletion() async {
     if (state.puzzle == null) return;
     final storage = _ref.read(triverseStorageProvider);
+
+    // Calculate total time from all answers
+    final totalTimeMs = state.answers.fold(0, (sum, a) => sum + a.timeMs);
+
+    // Track completion in analytics
+    AnalyticsService.trackGameComplete(
+      gameName: GameNames.triverse,
+      score: state.totalScore,
+      timeSeconds: totalTimeMs ~/ 1000,
+      hintsUsed: state.fiftyFiftyUsed ? 1 : 0,
+      isArchive: state.isArchive,
+    );
 
     if (state.isArchive) {
       // Archive puzzles don't affect streak
