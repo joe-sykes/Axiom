@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -17,22 +16,6 @@ import 'doublet/providers/providers.dart';
 /// Tracks if migration was just completed (for showing success message)
 bool migrationJustCompleted = false;
 
-/// Preload Lottie animations to prevent glitches on first display
-Future<void> _preloadLottieAnimations() async {
-  final assets = [
-    'assets/confetti_success.json',
-    'assets/Trophy_winner.json',
-  ];
-
-  for (final asset in assets) {
-    try {
-      await AssetLottie(asset).load();
-    } catch (_) {
-      // Silently ignore if asset fails to load
-    }
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -42,9 +25,6 @@ void main() async {
   }
 
   // Firebase is now lazily initialized per-game for faster startup
-
-  // Preload Lottie animations (don't await - load in background)
-  _preloadLottieAnimations();
 
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();

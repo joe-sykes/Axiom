@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-
 import '../../core/constants/route_names.dart';
+import '../../core/widgets/confetti_overlay.dart';
 import '../../core/services/analytics_service.dart';
 import '../../core/theme/axiom_theme.dart';
 import '../../core/widgets/app_footer.dart';
@@ -388,16 +387,8 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
         ),
           ),
           if (showConfetti)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Lottie.asset(
-                  'assets/confetti_success.json',
-                  repeat: false,
-                  fit: BoxFit.cover,
-                  frameRate: const FrameRate(60),
-                  renderCache: RenderCache.raster,
-                ),
-              ),
+            const Positioned.fill(
+              child: ConfettiAnimation(),
             ),
         ],
       ),

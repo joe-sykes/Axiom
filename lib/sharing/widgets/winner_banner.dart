@@ -100,8 +100,6 @@ class _WinnerBannerState extends State<WinnerBanner>
                   _controller.forward();
                 },
                 fit: BoxFit.contain,
-                frameRate: const FrameRate(60),
-                renderCache: RenderCache.raster,
               ),
             )
           else

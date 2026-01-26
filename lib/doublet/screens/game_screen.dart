@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-
 import '../../core/constants/route_names.dart';
+import '../../core/widgets/confetti_overlay.dart';
 import '../../core/widgets/app_footer.dart';
 import '../../core/widgets/game_keyboard.dart';
 import '../core/constants/ui_constants.dart';
@@ -404,16 +403,8 @@ class _DoubletGameScreenState extends ConsumerState<DoubletGameScreen> {
           ),
             ),
             if (showConfetti)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Lottie.asset(
-                    'assets/confetti_success.json',
-                    repeat: false,
-                    fit: BoxFit.cover,
-                    frameRate: const FrameRate(60),
-                    renderCache: RenderCache.raster,
-                  ),
-                ),
+              const Positioned.fill(
+                child: ConfettiAnimation(),
               ),
           ],
         );
