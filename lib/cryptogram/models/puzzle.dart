@@ -30,16 +30,29 @@ class CryptogramPuzzle {
     );
   }
 
-  /// Generate a cipher mapping for this puzzle
+  /// Generate a cipher mapping for this puzzle (derangement - no letter maps to itself)
   Map<String, String> generateCipher() {
     final letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    final shuffled = List<String>.from(letters)..shuffle();
+    List<String> shuffled;
+
+    // Keep shuffling until no letter maps to itself (derangement)
+    do {
+      shuffled = List<String>.from(letters)..shuffle();
+    } while (_hasFixedPoint(letters, shuffled));
 
     final cipher = <String, String>{};
     for (int i = 0; i < letters.length; i++) {
       cipher[letters[i]] = shuffled[i];
     }
     return cipher;
+  }
+
+  /// Check if any letter maps to itself
+  static bool _hasFixedPoint(List<String> original, List<String> shuffled) {
+    for (int i = 0; i < original.length; i++) {
+      if (original[i] == shuffled[i]) return true;
+    }
+    return false;
   }
 
   /// Encode the quote using a cipher
