@@ -4,7 +4,7 @@
 
 A collection of brain-teasing daily puzzles to keep your mind sharp. New challenges drop every day at midnight.
 
-**Play now:** [axiompuzzles.web.app](https://axiompuzzles.web.app)
+**Play now:** [axiomp-puzzles.com](https://axiom-puzzles.com)
 
 ---
 
